@@ -1,5 +1,5 @@
 ; LibreWolf WinUpdater - https://github.com/ltGuillaume/LibreWolf-WinUpdater
-;@Ahk2Exe-SetFileVersion 1.0.0
+;@Ahk2Exe-SetFileVersion 1.1.0
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf WinUpdater
@@ -11,6 +11,7 @@
 
 Global ExeFile = "librewolf.exe"
 Global IniFile = A_ScriptDir "\LibreWolf-WinUpdater.ini"
+Global IsPortable
 
 ; Strings
 _Title               = LibreWolf WinUpdater
@@ -23,6 +24,7 @@ _DownloadSetupError  = Could not download the LibreWolf setup file.
 _SilentUpdateError   = Silent update did not complete.`nDo you want to run the interactive installer?
 _NewVersionFound     = A new version has been found.`nStart the update by closing LibreWolf.
 _NoNewVersion        = No new version found
+_ExtractionError     = Could not extract archive of portable version.
 _IsUpdated           = LibreWolf has just been updated from
 _To                  = to
 
@@ -37,7 +39,13 @@ If !A_IsCompiled
 	Menu, Tray, Icon, %A_ScriptDir%\LibreWolf-WinUpdater.ico
 
 ; Get the path to LibreWolf
-IniRead, Path, %IniFile%, Settings, Path, %ProgramFiles%\LibreWolf\%ExeFile%
+If FileExist(A_ScriptDir "\LibreWolf-Portable.exe") {
+; Portable LibreWolf is present
+	IsPortable := True
+	Path := A_ScriptDir "\LibreWolf\librewolf.exe"
+} Else
+	IniRead, Path, %IniFile%, Settings, Path, %ProgramFiles%\LibreWolf\%ExeFile%
+
 CheckPath:
 If !FileExist(Path) {
 	MsgBox, 48, %_Title%, %_GetPathError%
@@ -67,9 +75,9 @@ If !File
 
 ; Compare versions
 ReleaseInfo := File.Read(64)
-;MsgBox, Release = %ReleaseInfo% | Version = %Version%
+;MsgBox, Release = %ReleaseInfo% | Version = %CurrentVersion%
 If InStr(ReleaseInfo, CurrentVersion) {
-	IniWrite, %_NoNewVersion%, %IniFile%, Data, LastResult
+	IniWrite, %_NoNewVersion%, %IniFile%, Log, LastResult
 	Exit
 }
 
@@ -82,19 +90,30 @@ If ErrorLevel {
 }
 
 ; Get setup file URL
-Download := File.Read(4096)
-SetupFile = LibreWolf-Update.exe
-RegExMatch(Download, "i)https://gitlab.com/librewolf-community/browser/windows/uploads/.*?\.exe", DownloadUrl)
-;MsgBox, Downloading`n%DownloadUrl%`nto`n%SetupFile%
-If !DownloadUrl
+Download  := File.Read(4096)
+Extension := IsPortable ? "zip" : "exe"
+SetupFile := "LibreWolf-Update." Extension
+RegExMatch(Download, "i)" Extension """,""url"":""(https://gitlab.com/librewolf-community/browser/windows/uploads/.*?\." Extension ")", DownloadUrl)
+;MsgBox, Downloading`n%DownloadUrl1%`nto`n%SetupFile%
+If !DownloadUrl1
 	Die(_FindUrlError)
 
 ; Download setup file
-UrlDownloadToFile, %DownloadUrl%, %SetupFile%
+UrlDownloadToFile, %DownloadUrl1%, %SetupFile%
 If !FileExist(SetupFile)
 	Die(_DownloadSetupError)
 
-; Run setup
+; Extract archive of portable version
+If IsPortable {
+	RunWait, powershell.exe Expand-Archive ""%SetupFile%"" LibreWolf-Extracted
+	If ErrorLevel
+		Die(_ExtractionError)
+	Loop, Files, LibreWolf-Extracted\*, D
+		FileMoveDir, %A_LoopFilePath%, %A_ScriptDir%, 2
+	Goto, Report
+}
+
+; Or run silent setup
 RunWait, %SetupFile% /S,, UseErrorLevel
 If ErrorLevel {
 	MsgBox, 52, %_Title%, %_SilentUpdateError%
@@ -103,27 +122,33 @@ If ErrorLevel {
 }
 
 ; Report update if completed
+Report:
 FileGetVersion, NewVersion, %Path%
 StringLeft, NewVersion, NewVersion, InStr(NewVersion, ".",, -1) - 1
 If NewVersion = %CurrentVersion%
 	Exit
-IniWrite, %CurrentVersion%, %IniFile%, Data, LastUpdateFrom
-IniWrite, %NewVersion%, %IniFile%, Data, LastUpdateTo
-IniWrite, %_IsUpdated% v%CurrentVersion% %_To% v%NewVersion%, %IniFile%, Data, LastResult
+FormatTime, CurrentTime
+IniWrite, %CurrentTime%, %IniFile%, Log, LastUpdate
+IniWrite, %CurrentVersion%, %IniFile%, Log, LastUpdateFrom
+IniWrite, %NewVersion%, %IniFile%, Log, LastUpdateTo
+IniWrite, %_IsUpdated% v%CurrentVersion% %_To% v%NewVersion%, %IniFile%, Log, LastResult
 TrayTip,, %_IsUpdated%`nv%CurrentVersion% %_To%`nv%NewVersion%,, 16
 Sleep, 10000
 
 ; Clean up
 Exit:
 FormatTime, CurrentTime
-IniWrite, %CurrentTime%, %IniFile%, Data, LastRun
+IniWrite, %CurrentTime%, %IniFile%, Log, LastRun
+Sleep, 2000
 If ReleaseFile
 	FileDelete, %ReleaseFile%
 If SetupFile
 	FileDelete, %SetupFile%
+If IsPortable
+	FileDelete, LibreWolf-Extracted
 
 Die(Error) {
-	IniWrite, %Error%, %IniFile%, Data, LastResult
+	IniWrite, %Error%, %IniFile%, Log, LastResult
 	If (A_Args[1] <> "/Scheduled")
 		MsgBox, 48, %_Title%, %Error%
 	Exit
