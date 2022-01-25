@@ -106,7 +106,7 @@ If !FileExist(SetupFile)
 ; Extract archive of portable version
 If IsPortable {
 	FileRemoveDir, LibreWolf-Extracted
-	RunWait, powershell.exe -NoProfile Expand-Archive ""%SetupFile%"" LibreWolf-Extracted,, Hide
+	RunWait, powershell.exe -NoProfile -Command "Expand-Archive """%SetupFile%""" LibreWolf-Extracted" -ErrorAction Stop,, Hide
 	If ErrorLevel
 		Die(_ExtractionError)
 	Loop, Files, LibreWolf-Extracted\*, D
