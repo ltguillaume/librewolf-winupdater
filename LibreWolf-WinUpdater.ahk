@@ -1,5 +1,5 @@
 ; LibreWolf WinUpdater - https://github.com/ltGuillaume/LibreWolf-WinUpdater
-;@Ahk2Exe-SetFileVersion 1.1.1
+;@Ahk2Exe-SetFileVersion 1.1.2
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf WinUpdater
@@ -76,7 +76,7 @@ If !File
 ; Compare versions
 ReleaseInfo := File.Read(64)
 ;MsgBox, Release = %ReleaseInfo% | Version = %CurrentVersion%
-If InStr(ReleaseInfo, CurrentVersion) {
+If InStr(ReleaseInfo, """v" CurrentVersion """") {
 	IniWrite, %_NoNewVersion%, %IniFile%, Log, LastResult
 	Exit
 }
