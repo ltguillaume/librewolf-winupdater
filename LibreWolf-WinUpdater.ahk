@@ -1,5 +1,5 @@
 ; LibreWolf WinUpdater - https://github.com/ltGuillaume/LibreWolf-WinUpdater
-;@Ahk2Exe-SetFileVersion 1.1.0
+;@Ahk2Exe-SetFileVersion 1.1.1
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf WinUpdater
@@ -23,7 +23,7 @@ _FindUrlError        = Could not find the URL to download LibreWolf.
 _DownloadSetupError  = Could not download the LibreWolf setup file.
 _SilentUpdateError   = Silent update did not complete.`nDo you want to run the interactive installer?
 _NewVersionFound     = A new version has been found.`nStart the update by closing LibreWolf.
-_NoNewVersion        = No new version found
+_NoNewVersion        = No new version found.
 _ExtractionError     = Could not extract archive of portable version.
 _IsUpdated           = LibreWolf has just been updated from
 _To                  = to
@@ -105,7 +105,8 @@ If !FileExist(SetupFile)
 
 ; Extract archive of portable version
 If IsPortable {
-	RunWait, powershell.exe Expand-Archive ""%SetupFile%"" LibreWolf-Extracted
+	FileRemoveDir, LibreWolf-Extracted
+	RunWait, powershell.exe -NoProfile Expand-Archive ""%SetupFile%"" LibreWolf-Extracted,, Hide
 	If ErrorLevel
 		Die(_ExtractionError)
 	Loop, Files, LibreWolf-Extracted\*, D
@@ -131,9 +132,10 @@ FormatTime, CurrentTime
 IniWrite, %CurrentTime%, %IniFile%, Log, LastUpdate
 IniWrite, %CurrentVersion%, %IniFile%, Log, LastUpdateFrom
 IniWrite, %NewVersion%, %IniFile%, Log, LastUpdateTo
-IniWrite, %_IsUpdated% v%CurrentVersion% %_To% v%NewVersion%, %IniFile%, Log, LastResult
+IniWrite, %_IsUpdated% v%CurrentVersion% %_To% v%NewVersion%., %IniFile%, Log, LastResult
 TrayTip,, %_IsUpdated%`nv%CurrentVersion% %_To%`nv%NewVersion%,, 16
 Sleep, 10000
+Exit
 
 ; Clean up
 Exit:
@@ -145,7 +147,7 @@ If ReleaseFile
 If SetupFile
 	FileDelete, %SetupFile%
 If IsPortable
-	FileDelete, LibreWolf-Extracted
+	FileRemoveDir, LibreWolf-Extracted
 
 Die(Error) {
 	IniWrite, %Error%, %IniFile%, Log, LastResult
