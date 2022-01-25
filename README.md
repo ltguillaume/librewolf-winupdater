@@ -16,5 +16,8 @@ An attempt to make updating LibreWolf for Windows much easier.
 2. Afterwards, you can right-click on `ScheduledTask-Create.ps1` and choose `Run with PowerShell` to create a scheduled task that checks for updates every 4 hours, and at logon. When run from a scheduled task, error messages will only be saved in  `LibreWolf-WinUpdater.ini` (no dialogs will be shown). The updater will now run as administrator, so that the installer can be run silently.
 3. You can remove the scheduled task by running `ScheduledTask-Remove.ps1`.
 
+- The updater needs to be able to write to `LibreWolf-WinUpdater.ini` in its own folder, so make sure it's got permission to do so.
+- In the ini-file, you'll find the path to `LibreWolf.exe` if you picked an alternative install location. It also contains the last result of checking for updates and the last update action.
+
 ## Credits
 * Icon by the [LibreWolf Community](https://gitlab.com/librewolf-community/branding/-/tree/master/icon)
