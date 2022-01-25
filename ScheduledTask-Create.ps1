@@ -1,19 +1,17 @@
 ﻿If (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))
 {
   # Relaunch as an elevated process
-  Start-Process powershell.exe "-File",('"{0}"' -f $MyInvocation.MyCommand.Path) -Verb RunAs
-  exit
+  $User = [Environment]::UserName
+  $Script = $MyInvocation.MyCommand.Path
+  Start-Process powershell.exe -Verb RunAs "-ExecutionPolicy RemoteSigned -NoExit -Command",$Script,$User
+  Exit
 }
 
-$Action= New-ScheduledTaskAction -Execute "$PSScriptRoot\LibreWolf-WinUpdater.exe" -Argument "/Scheduled"
+$Action   = New-ScheduledTaskAction -Execute "$PSScriptRoot\LibreWolf-WinUpdater.exe" -Argument "/Scheduled"
 $Settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -RunOnlyIfNetworkAvailable
-$Trigger = @(
-  $(New-ScheduledTaskTrigger -AtLogOn),
-  $(New-ScheduledTaskTrigger -Once -At 0:00 -RepetitionInterval (New-TimeSpan -Hours 4))
-)
-$User = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+$4Hours   = New-ScheduledTaskTrigger -Once -At (Get-Date -Minute 0 -Second 0).AddHours(1) -RepetitionInterval (New-TimeSpan -Hours 4)
+$AtLogon  = New-ScheduledTaskTrigger -AtLogOn
+$AtLogon.Delay = 'PT1M'
 
-Register-ScheduledTask -TaskName "LibreWolf WinUpdater" -Action $Action -Settings $Settings -Trigger $Trigger -User $User -RunLevel Highest –Force
+Register-ScheduledTask -TaskName "LibreWolf WinUpdater $Args" -Action $Action -Settings $Settings -Trigger $4Hours,$AtLogon -User $Args[0] -RunLevel Highest –Force
 Write-Output Done.
-
-Pause

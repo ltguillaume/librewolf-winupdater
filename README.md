@@ -10,10 +10,11 @@
 An attempt to make updating LibreWolf for Windows much easier.
 
 ## Getting started
-1. Having installed LibreWolf, you can run `LibreWolf-WinUpdater.exe` to check for a new version, then download and install it immediately. If LibreWolf is running, the updater will notify you of the new version, and update as soon as you close the browser (again, notifying you). The last result can be found in `LibreWolf-WinUpdater.ini`.
-  If you place `LibreWolf-WinUpdater.exe` in the same folder as `LibreWolf-Portable.exe`, it will update the __portable version__, too.
+1. Having installed LibreWolf, you can run `LibreWolf-WinUpdater.exe` to check for a new version, then download and install it immediately. If LibreWolf is running, the updater will notify you of the new version, and update as soon as you close the browser (again, notifying you). The last result can be found in `LibreWolf-WinUpdater.ini`.  
+  If you place `LibreWolf-WinUpdater.exe` in the same folder as `LibreWolf-Portable.exe`, it will update the __portable version__, too.  
   _The updater depends on PowerShell to extract the contents of the zip-file._
-2. Afterwards, you can right-click on `ScheduledTask-Create.ps1` and choose `Run with PowerShell` to create a scheduled task that checks for updates every 4 hours, and at logon. When run from a scheduled task, error messages will only be saved in  `LibreWolf-WinUpdater.ini` (no dialogs will be shown). The updater will now run as administrator, so that the installer can be run silently.
+2. Afterwards, you can right-click on `ScheduledTask-Create.ps1` and choose `Run with PowerShell` to create a scheduled task for the current user account that checks for updates every 4 hours, and at logon. When run from a scheduled task, _error_ messages will only be saved in  `LibreWolf-WinUpdater.ini` (no dialogs will be shown). The updater will now run as administrator, so the installer can be run silently.  
+  __Warning__: In order to run PowerShell scripts, the Execution Policy should set to at least _RemoteSigned_ (`Set-ExecutionPolicy RemoteSigned`). The included scripts try to automatically do that. You can reset this policy in an elevated PowerShell window by typing `Set-ExecutionPolicy Default` and `Y`.
 3. You can remove the scheduled task by running `ScheduledTask-Remove.ps1`.
 
 - The updater needs to be able to write to `LibreWolf-WinUpdater.ini` in its own folder, so make sure it's got permission to do so.
