@@ -1,5 +1,5 @@
 ; LibreWolf WinUpdater - https://github.com/ltGuillaume/LibreWolf-WinUpdater
-;@Ahk2Exe-SetFileVersion 1.2.0
+;@Ahk2Exe-SetFileVersion 1.2.1
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf WinUpdater
@@ -162,7 +162,7 @@ IniWrite, %CurrentVersion%, %IniFile%, Log, LastUpdateFrom
 IniWrite, %NewVersion%, %IniFile%, Log, LastUpdateTo
 IniWrite, %_IsUpdated% v%CurrentVersion% %_To% v%NewVersion%., %IniFile%, Log, LastResult
 TrayTip,, %_IsUpdated%`nv%CurrentVersion% %_To%`nv%NewVersion%,, 16
-Sleep, 10000
+Sleep, 60000
 Exit
 
 ; Clean up
@@ -175,6 +175,8 @@ If ReleaseFile
 	FileDelete, %ReleaseFile%
 If SetupFile
 	FileDelete, %SetupFile%
+If ChecksumFile
+	FileDelete, %ChecksumFile%
 If IsPortable
 	FileRemoveDir, LibreWolf-Extracted, 1
 
