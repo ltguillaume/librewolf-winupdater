@@ -7,5 +7,5 @@ If (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
   Exit
 }
 
-Unregister-ScheduledTask -TaskName "LibreWolf WinUpdater $Args" -Confirm:$False
+Unregister-ScheduledTask -TaskName "LibreWolf WinUpdater ($Args)" -Confirm:$False
 Write-Output Done.
