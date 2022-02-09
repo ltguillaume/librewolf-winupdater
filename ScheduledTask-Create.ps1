@@ -3,7 +3,7 @@
   # Relaunch as an elevated process
   $User = [Environment]::UserName
   $Script = $MyInvocation.MyCommand.Path
-  Start-Process powershell.exe -Verb RunAs "-ExecutionPolicy RemoteSigned -NoExit -Command",$Script,$User
+  Start-Process powershell.exe -Verb RunAs "-ExecutionPolicy RemoteSigned -NoExit -File `"$PSCommandPath`" `"${User}`""
   Exit
 }
 
