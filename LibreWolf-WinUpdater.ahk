@@ -31,7 +31,7 @@ _Extracting          = Extracting update for LibreWolf...
 _Installing          = Installing update for LibreWolf...
 _SilentUpdateError   = Silent update did not complete.`nDo you want to run the interactive installer?
 _NewVersionFound     = A new version has been found.`nStart the update by closing LibreWolf.
-_NoNewVersion        = No new LibreWolf version has been found.
+_NoNewVersion        = No new LibreWolf version found.
 _ExtractionError     = Could not extract archive of portable version.
 _IsUpdated           = LibreWolf has just been updated from
 _To                  = to
@@ -51,8 +51,13 @@ If FileExist(A_ScriptDir "\LibreWolf-Portable.exe") {
 ; Portable LibreWolf is present
 	IsPortable := True
 	Path := A_ScriptDir "\LibreWolf\librewolf.exe"
-} Else
-	IniRead, Path, %IniFile%, Settings, Path, %ProgramFiles%\LibreWolf\%ExeFile%
+} Else {
+	IniRead, Path, %IniFile%, Settings, Path, 0
+	If !Path
+		RegRead, Path, HKLM\SOFTWARE\Clients\StartMenuInternet\LibreWolf\shell\open\command
+	If Errorlevel
+		Path = %A_ProgramFiles%\LibreWolf\%ExeFile%
+}
 
 CheckPath:
 If !FileExist(Path) {
@@ -161,11 +166,13 @@ If IsPortable {
 ; Or run silent setup
 If Verbose
 	TrayTip,, %_Installing%,, 16
-RunWait, %SetupFile% /S,, UseErrorLevel
+Folder := StrReplace(Path, ExeFile)
+;MsgBox, %SetupFile% /S /D=%Folder%
+RunWait, %SetupFile% /S /D=%Folder%,, UseErrorLevel
 If ErrorLevel {
 	MsgBox, 52, %_Title%, %_SilentUpdateError%
 	IfMsgBox Yes
-		RunWait, %SetupFile%,, UseErrorLevel
+		RunWait, %SetupFile% /D=%Folder%,, UseErrorLevel
 }
 
 ; Report update if completed
