@@ -33,7 +33,8 @@ _SilentUpdateError   = Silent update did not complete.`nDo you want to run the i
 _NewVersionFound     = A new version has been found.`nStart the update by closing LibreWolf.
 _NoNewVersion        = No new LibreWolf version found.
 _ExtractionError     = Could not extract archive of portable version.
-_IsUpdated           = LibreWolf has just been updated from
+_IsUpdated           = LibreWolf has just been updated
+_From                = from
 _To                  = to
 
 ; Preparation
@@ -185,8 +186,8 @@ FormatTime, CurrentTime
 IniWrite, %CurrentTime%, %IniFile%, Log, LastUpdate
 IniWrite, %CurrentVersion%, %IniFile%, Log, LastUpdateFrom
 IniWrite, %NewVersion%, %IniFile%, Log, LastUpdateTo
-IniWrite, %_IsUpdated% v%CurrentVersion% %_To% v%NewVersion%., %IniFile%, Log, LastResult
-TrayTip,, %_IsUpdated%`nv%CurrentVersion% %_To%`nv%NewVersion%,, 16
+IniWrite, %_IsUpdated% %_From% v%CurrentVersion% %_To% v%NewVersion%., %IniFile%, Log, LastResult
+TrayTip, %_IsUpdated%, %_From% v%CurrentVersion% %_To% v%NewVersion%,, 16
 Sleep, 60000
 Exit
 
