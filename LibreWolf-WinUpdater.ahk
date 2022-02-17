@@ -1,5 +1,5 @@
 ; LibreWolf WinUpdater - https://github.com/ltGuillaume/LibreWolf-WinUpdater
-;@Ahk2Exe-SetFileVersion 1.2.2
+;@Ahk2Exe-SetFileVersion 1.2.3
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf WinUpdater
@@ -12,6 +12,7 @@
 ExeFile    := "librewolf.exe"
 IniFile    := A_ScriptDir "\LibreWolf-WinUpdater.ini"
 IsPortable := False
+Verbose    := A_Args[1] <> "/Scheduled"
 
 ; Strings
 _Title               = LibreWolf WinUpdater
@@ -20,14 +21,17 @@ _SelectFileTitle     = %_Title% - Select %ExeFile%...
 _GetVersionError     = Could not determine current version of LibreWolf.
 _DownloadJsonError   = Could not download releases file to check for a new version.
 _FindUrlError        = Could not find the URL to download LibreWolf.
+_Downloading         = Downloading update for LibreWolf...
 _DownloadSetupError  = Could not download the LibreWolf setup file.
 _FindSumsUrlError    = Could not find the URL to the checksum file.
 _FindChecksumError   = Could not find the checksum for the downloaded file.
 _ChecksumMatchError  = The file checksum did not match, so it's possible the download failed.
 _NoChangesMade       = No changes were made.
+_Extracting          = Extracting update for LibreWolf...
+_Installing          = Installing update for LibreWolf...
 _SilentUpdateError   = Silent update did not complete.`nDo you want to run the interactive installer?
 _NewVersionFound     = A new version has been found.`nStart the update by closing LibreWolf.
-_NoNewVersion        = No new version found.
+_NoNewVersion        = No new LibreWolf version has been found.
 _ExtractionError     = Could not extract archive of portable version.
 _IsUpdated           = LibreWolf has just been updated from
 _To                  = to
@@ -85,6 +89,10 @@ If DotCount < 2
 	Release1 := Release1 ".0"
 ;MsgBox, ReleaseInfo = %ReleaseInfo%`nCurrentVersion = %CurrentVersion%`nRelease1 = %Release1%
 If (Release1 = CurrentVersion) {
+	If Verbose {
+		TrayTip,, %_NoNewVersion%,, 16
+		Sleep, 6000
+	}
 	IniWrite, %_NoNewVersion%, %IniFile%, Log, LastResult
 	Exit
 }
@@ -106,6 +114,8 @@ If !DownloadUrl1 Or !DownloadUrl2
 	Die(_FindUrlError)
 
 ; Download setup file
+If Verbose
+	TrayTip,, %_Downloading%,, 16
 SetupFile := DownloadUrl2
 UrlDownloadToFile, %DownloadUrl1%, %SetupFile%
 If !FileExist(SetupFile)
@@ -137,6 +147,8 @@ If !ErrorLevel
 
 ; Extract archive of portable version
 If IsPortable {
+	If Verbose
+		TrayTip,, %_Extracting%,, 16
 	FileRemoveDir, LibreWolf-Extracted, 1
 	RunWait, powershell.exe -NoProfile -Command "Expand-Archive """%SetupFile%""" LibreWolf-Extracted" -ErrorAction Stop,, Hide
 	If ErrorLevel
@@ -147,6 +159,8 @@ If IsPortable {
 }
 
 ; Or run silent setup
+If Verbose
+	TrayTip,, %_Installing%,, 16
 RunWait, %SetupFile% /S,, UseErrorLevel
 If ErrorLevel {
 	MsgBox, 52, %_Title%, %_SilentUpdateError%
@@ -185,9 +199,9 @@ If IsPortable
 	FileRemoveDir, LibreWolf-Extracted, 1
 
 Die(Error) {
-	Global _Title, _NoChangesMade
+	Global Verbose, _Title, _NoChangesMade
 	IniWrite, %Error%, %IniFile%, Log, LastResult
-	If (A_Args[1] <> "/Scheduled")
+	If Verbose
 		MsgBox, 48, %_Title%, %Error%`n%_NoChangesMade%
 	Exit
 }
