@@ -1,5 +1,5 @@
 ; LibreWolf WinUpdater - https://github.com/ltGuillaume/LibreWolf-WinUpdater
-;@Ahk2Exe-SetFileVersion 1.2.4
+;@Ahk2Exe-SetFileVersion 1.2.5
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf WinUpdater
@@ -47,6 +47,14 @@ UpdaterVersion := SubStr(UpdaterVersion, 1, -2)
 Menu, Tray, Tip, %_Title% %UpdaterVersion%
 If !A_IsCompiled
 	Menu, Tray, Icon, %A_ScriptDir%\LibreWolf-WinUpdater.ico
+
+; Change notifications somewhat if run from portable version
+Process, Exist, LibreWolf-Portable.exe
+If ErrorLevel
+	RunningPortable := True
+; If there's a version number, assume it's my portable version and don't overwrite later on
+Else
+	FileGetVersion, MyPortableVersion, %A_ScriptDir%\LibreWolf-Portable.exe
 
 ; Get the path to LibreWolf
 If FileExist(A_ScriptDir "\LibreWolf-Portable.exe") {
