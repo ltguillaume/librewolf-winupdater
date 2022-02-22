@@ -1,5 +1,5 @@
 ; LibreWolf WinUpdater - https://github.com/ltGuillaume/LibreWolf-WinUpdater
-;@Ahk2Exe-SetFileVersion 1.2.3
+;@Ahk2Exe-SetFileVersion 1.2.4
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf WinUpdater
@@ -33,6 +33,7 @@ _SilentUpdateError   = Silent update did not complete.`nDo you want to run the i
 _NewVersionFound     = A new version has been found.`nStart the update by closing LibreWolf.
 _NoNewVersion        = No new LibreWolf version found.
 _ExtractionError     = Could not extract archive of portable version.
+_MoveToTargetError   = Could not move the extracted files into the target folder.
 _IsUpdated           = LibreWolf has just been updated
 _From                = from
 _To                  = to
@@ -40,9 +41,9 @@ _To                  = to
 ; Preparation
 #NoEnv
 EnvGet Temp, Temp
+OnExit, Exit
 FileGetVersion, UpdaterVersion, %A_ScriptFullPath%
 UpdaterVersion := SubStr(UpdaterVersion, 1, -2)
-OnExit, Exit
 Menu, Tray, Tip, %_Title% %UpdaterVersion%
 If !A_IsCompiled
 	Menu, Tray, Icon, %A_ScriptDir%\LibreWolf-WinUpdater.ico
@@ -121,7 +122,7 @@ If !DownloadUrl1 Or !DownloadUrl2
 
 ; Download setup file
 If Verbose
-	TrayTip,, %_Downloading%,, 16
+	TrayTip, %_Downloading%, v%Release1%,, 16
 SetupFile := DownloadUrl2
 UrlDownloadToFile, %DownloadUrl1%, %SetupFile%
 If !FileExist(SetupFile)
@@ -154,19 +155,23 @@ If !ErrorLevel
 ; Extract archive of portable version
 If IsPortable {
 	If Verbose
-		TrayTip,, %_Extracting%,, 16
+		TrayTip, %_Extracting%, v%Release1%,, 16
 	FileRemoveDir, LibreWolf-Extracted, 1
 	RunWait, powershell.exe -NoProfile -Command "Expand-Archive """%SetupFile%""" LibreWolf-Extracted" -ErrorAction Stop,, Hide
 	If ErrorLevel
 		Die(_ExtractionError)
 	Loop, Files, LibreWolf-Extracted\*, D
+	{
 		FileMoveDir, %A_LoopFilePath%, %A_ScriptDir%, 2
+		If Errorlevel
+			Die(_MoveToTargetError)
+	}
 	Goto, Report
 }
 
 ; Or run silent setup
 If Verbose
-	TrayTip,, %_Installing%,, 16
+	TrayTip, %_Installing%, v%Release1%,, 16
 Folder := StrReplace(Path, ExeFile)
 ;MsgBox, %SetupFile% /S /D=%Folder%
 RunWait, %SetupFile% /S /D=%Folder%,, UseErrorLevel
