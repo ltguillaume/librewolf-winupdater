@@ -1,5 +1,5 @@
 ; LibreWolf WinUpdater - https://github.com/ltGuillaume/LibreWolf-WinUpdater
-;@Ahk2Exe-SetFileVersion 1.2.5
+;@Ahk2Exe-SetFileVersion 1.2.6
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf WinUpdater
@@ -104,7 +104,7 @@ If DotCount < 2
 	Release1 := Release1 ".0"
 ;MsgBox, ReleaseInfo = %ReleaseInfo%`nCurrentVersion = %CurrentVersion%`nRelease1 = %Release1%
 If (Release1 = CurrentVersion) {
-	If Verbose {
+	If !RunningPortable And Verbose {
 		TrayTip,, %_NoNewVersion%,, 16
 		Sleep, 6000
 	}
@@ -170,9 +170,11 @@ If IsPortable {
 		Die(_ExtractionError)
 	Loop, Files, LibreWolf-Extracted\*, D
 	{
-		FileMoveDir, %A_LoopFilePath%, %A_ScriptDir%, 2
+		FileMoveDir, %A_LoopFilePath%\LibreWolf, %A_ScriptDir%\LibreWolf, 2
 		If Errorlevel
 			Die(_MoveToTargetError)
+		If !MyPortableVersion
+			FileMove, %A_LoopFilePath%\*.*, %A_ScriptDir%\, 1
 	}
 	Goto, Report
 }
@@ -201,7 +203,8 @@ IniWrite, %CurrentVersion%, %IniFile%, Log, LastUpdateFrom
 IniWrite, %NewVersion%, %IniFile%, Log, LastUpdateTo
 IniWrite, %_IsUpdated% %_From% v%CurrentVersion% %_To% v%NewVersion%., %IniFile%, Log, LastResult
 TrayTip, %_IsUpdated%, %_From% v%CurrentVersion% %_To% v%NewVersion%,, 16
-Sleep, 60000
+If !RunningPortable
+	Sleep, 60000
 Exit
 
 ; Clean up
