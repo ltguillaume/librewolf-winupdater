@@ -27,4 +27,4 @@ An attempt to make updating LibreWolf for Windows much easier.
 - The ini-file contains the last result of checking for updates and the last update action.
 
 ## Credits
-* Icon by the [LibreWolf Community](https://gitlab.com/librewolf-community/branding/-/tree/master/icon)
+* Original icon by the [LibreWolf Community](https://gitlab.com/librewolf-community/branding/-/tree/master/icon)
