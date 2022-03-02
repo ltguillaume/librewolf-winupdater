@@ -45,8 +45,13 @@ OnExit, Exit
 FileGetVersion, UpdaterVersion, %A_ScriptFullPath%
 UpdaterVersion := SubStr(UpdaterVersion, 1, -2)
 Menu, Tray, Tip, %_Title% %UpdaterVersion%
-If !A_IsCompiled
-	Menu, Tray, Icon, %A_ScriptDir%\LibreWolf-WinUpdater.ico
+Menu, Tray, NoStandard
+Menu, Tray, Add, &About, About
+Menu, Tray, Add, E&xit, Exit
+
+About() {
+	Run, https://github.com/ltGuillaume/LibreWolf-WinUpdater
+}
 
 ; Change notifications somewhat if run from portable version
 Process, Exist, LibreWolf-Portable.exe
