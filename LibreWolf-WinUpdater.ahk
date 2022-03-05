@@ -1,5 +1,5 @@
 ; LibreWolf WinUpdater - https://github.com/ltGuillaume/LibreWolf-WinUpdater
-;@Ahk2Exe-SetFileVersion 1.2.6
+;@Ahk2Exe-SetFileVersion 1.2.7
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf WinUpdater
@@ -127,7 +127,7 @@ If ErrorLevel {
 
 ; Get setup file URL
 Download  := File.Read(4096)
-FilenameEnd := IsPortable ? "win64.zip" : "setup.exe"
+FilenameEnd := IsPortable ? "portable.zip" : "setup.exe"
 RegExMatch(Download, "i)" FilenameEnd """,""url"":""(\Qhttps://gitlab.com/librewolf-community/browser/windows/uploads/\E.+?\/(librewolf-.+?" FilenameEnd "))", DownloadUrl)
 ;MsgBox, Downloading`n%DownloadUrl1%`nto`n%DownloadUrl2%
 If !DownloadUrl1 Or !DownloadUrl2
