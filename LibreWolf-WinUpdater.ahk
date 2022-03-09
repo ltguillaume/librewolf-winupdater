@@ -47,11 +47,13 @@ FileGetVersion, UpdaterVersion, %A_ScriptFullPath%
 UpdaterVersion := SubStr(UpdaterVersion, 1, -2)
 Menu, Tray, Tip, %_Title% %UpdaterVersion%
 Menu, Tray, NoStandard
-Menu, Tray, Add, &About, About
-Menu, Tray, Add, E&xit, Exit
+Menu, Tray, Add, Portable, About
+Menu, Tray, Add, WinUpdater, About
+Menu, Tray, Add, Exit, Exit
+Menu, Tray, Default, WinUpdater
 
-About() {
-	Run, https://github.com/ltGuillaume/LibreWolf-WinUpdater
+About(ItemName) {
+	Run, https://github.com/ltGuillaume/LibreWolf-%ItemName%
 }
 
 ; Get the path to LibreWolf
