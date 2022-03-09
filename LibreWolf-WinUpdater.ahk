@@ -1,5 +1,5 @@
 ; LibreWolf WinUpdater - https://github.com/ltGuillaume/LibreWolf-WinUpdater
-;@Ahk2Exe-SetFileVersion 1.2.7
+;@Ahk2Exe-SetFileVersion 1.3.0
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf WinUpdater
@@ -9,10 +9,11 @@
 ;@Ahk2Exe-PostExec ResourceHacker.exe -open "%A_WorkFileName%" -save "%A_WorkFileName%" -action delete -mask ICONGROUP`,207`, ,,,,1
 ;@Ahk2Exe-PostExec ResourceHacker.exe -open "%A_WorkFileName%" -save "%A_WorkFileName%" -action delete -mask ICONGROUP`,208`, ,,,,1
 
-ExeFile    := "librewolf.exe"
-IniFile    := A_ScriptDir "\LibreWolf-WinUpdater.ini"
-IsPortable := False
-Verbose    := A_Args[1] <> "/Scheduled"
+ExeFile         := "librewolf.exe"
+IniFile         := A_ScriptDir "\LibreWolf-WinUpdater.ini"
+IsPortable      := False
+RunningPortable := A_Args[1] = "/Portable"
+Verbose         := A_Args[1] <> "/Scheduled"
 
 ; Strings
 _Title               = LibreWolf WinUpdater
@@ -52,14 +53,6 @@ Menu, Tray, Add, E&xit, Exit
 About() {
 	Run, https://github.com/ltGuillaume/LibreWolf-WinUpdater
 }
-
-; Change notifications somewhat if run from portable version
-Process, Exist, LibreWolf-Portable.exe
-If ErrorLevel
-	RunningPortable := True
-; If there's a version number, assume it's my portable version and don't overwrite later on
-Else
-	FileGetVersion, MyPortableVersion, %A_ScriptDir%\LibreWolf-Portable.exe
 
 ; Get the path to LibreWolf
 If FileExist(A_ScriptDir "\LibreWolf-Portable.exe") {
@@ -178,8 +171,7 @@ If IsPortable {
 		FileMoveDir, %A_LoopFilePath%\LibreWolf, %A_ScriptDir%\LibreWolf, 2
 		If Errorlevel
 			Die(_MoveToTargetError)
-		If !MyPortableVersion
-			FileMove, %A_LoopFilePath%\*.*, %A_ScriptDir%\, 1
+		FileMove, %A_LoopFilePath%\*.*, %A_ScriptDir%\, 1
 	}
 	Goto, Report
 }
@@ -214,6 +206,8 @@ Exit
 
 ; Clean up
 Exit:
+If RunningPortable
+	Run, %A_ScriptDir%\LibreWolf-Portable.exe
 File.Close()
 FormatTime, CurrentTime
 IniWrite, %CurrentTime%, %IniFile%, Log, LastRun
