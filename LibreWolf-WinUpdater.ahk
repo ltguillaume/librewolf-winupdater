@@ -1,5 +1,5 @@
 ; LibreWolf WinUpdater - https://github.com/ltGuillaume/LibreWolf-WinUpdater
-;@Ahk2Exe-SetFileVersion 1.3.0
+;@Ahk2Exe-SetFileVersion 1.3.1
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf WinUpdater
@@ -173,6 +173,8 @@ If IsPortable {
 		FileMoveDir, %A_LoopFilePath%\LibreWolf, %A_ScriptDir%\LibreWolf, 2
 		If Errorlevel
 			Die(_MoveToTargetError)
+		If FileExist(A_LoopFilePath "\LibreWolf-WinUpdater.exe")
+			FileMove, %A_ScriptFullPath%, %A_ScriptFullPath%.pbak, 1
 		FileMove, %A_LoopFilePath%\*.*, %A_ScriptDir%\, 1
 	}
 	Goto, Report
@@ -222,6 +224,7 @@ If ChecksumFile
 	FileDelete, %ChecksumFile%
 If IsPortable
 	FileRemoveDir, LibreWolf-Extracted, 1
+FileDelete, %A_ScriptFullPath%.pbak
 
 Die(Error) {
 	Global Verbose, _Title, _NoChangesMade
