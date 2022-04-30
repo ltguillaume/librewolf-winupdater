@@ -1,5 +1,5 @@
 ; LibreWolf WinUpdater - https://github.com/ltGuillaume/LibreWolf-WinUpdater
-;@Ahk2Exe-SetFileVersion 1.3.1
+;@Ahk2Exe-SetFileVersion 1.3.2
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf WinUpdater
@@ -99,11 +99,13 @@ If !File
 ; Compare versions
 ReleaseInfo := File.Read(64)
 RegExMatch(ReleaseInfo, "i)Release v(.+?)""", Release)
-StrReplace(Release1, ".",, DotCount)
+NewVersion := Release1
+StrReplace(NewVersion, ".",, DotCount)
 If DotCount < 2
-	Release1 := Release1 ".0"
-;MsgBox, ReleaseInfo = %ReleaseInfo%`nCurrentVersion = %CurrentVersion%`nRelease1 = %Release1%
-If (Release1 = CurrentVersion) {
+	NewVersion := NewVersion ".0"
+;MsgBox, ReleaseInfo = %ReleaseInfo%`nCurrentVersion = %CurrentVersion%`nNewVersion = %NewVersion%
+IniRead, LastUpdateTo, %IniFile%, Log, LastUpdateTo, False
+If (NewVersion = CurrentVersion Or NewVersion = LastUpdateTo) {
 	If !RunningPortable And Verbose {
 		TrayTip,, %_NoNewVersion%,, 16
 		Sleep, 6000
@@ -130,7 +132,7 @@ If !DownloadUrl1 Or !DownloadUrl2
 
 ; Download setup file
 If Verbose
-	TrayTip, %_Downloading%, v%Release1%,, 16
+	TrayTip, %_Downloading%, v%NewVersion%,, 16
 SetupFile := DownloadUrl2
 UrlDownloadToFile, %DownloadUrl1%, %SetupFile%
 If !FileExist(SetupFile)
@@ -163,7 +165,7 @@ If !ErrorLevel
 ; Extract archive of portable version
 If IsPortable {
 	If Verbose
-		TrayTip, %_Extracting%, v%Release1%,, 16
+		TrayTip, %_Extracting%, v%NewVersion%,, 16
 	FileRemoveDir, LibreWolf-Extracted, 1
 	RunWait, powershell.exe -NoProfile -Command "Expand-Archive """%SetupFile%""" LibreWolf-Extracted" -ErrorAction Stop,, Hide
 	If ErrorLevel
@@ -182,7 +184,7 @@ If IsPortable {
 
 ; Or run silent setup
 If Verbose
-	TrayTip, %_Installing%, v%Release1%,, 16
+	TrayTip, %_Installing%, v%NewVersion%,, 16
 Folder := StrReplace(Path, ExeFile)
 ;MsgBox, %SetupFile% /S /D=%Folder%
 RunWait, %SetupFile% /S /D=%Folder%,, UseErrorLevel
@@ -194,10 +196,6 @@ If ErrorLevel {
 
 ; Report update if completed
 Report:
-FileGetVersion, NewVersion, %Path%
-StringLeft, NewVersion, NewVersion, InStr(NewVersion, ".",, -1) - 1
-If NewVersion = %CurrentVersion%
-	Exit
 FormatTime, CurrentTime
 IniWrite, %CurrentTime%, %IniFile%, Log, LastUpdate
 IniWrite, %CurrentVersion%, %IniFile%, Log, LastUpdateFrom
