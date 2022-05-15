@@ -13,7 +13,6 @@ An attempt to make updating LibreWolf for Windows much easier.
 - Download and extract the latest [`LibreWolf-WinUpdater_x.x.x.zip`](https://github.com/ltGuillaume/LibreWolf-WinUpdater/releases) to a folder you like, e.g. `%AppData%\LibreWolf`. Run `LibreWolf-WinUpdater.exe` to check for an update for the installed LibreWolf version. It will then be downloaded and installed immediately.  
   If LibreWolf is running, the updater will notify you of the new version, and update as soon as you close the browser. The last result can be found in `LibreWolf-WinUpdater.ini`.  
 - Or, if you use the __portable release__ of LibreWolf, place `LibreWolf-WinUpdater.exe` in the same folder as `LibreWolf-Portable.exe`. It will then automatically update LibreWolf whenever you run `LibreWolf-Portable.exe` (checking for a new version max. once a day).  
-  _The updater depends on PowerShell to extract the contents of the portable version's zip-file._
 
 ## Scheduled updates
 - You can right-click on `ScheduledTask-Create.ps1` and choose `Run with PowerShell` to create a scheduled task (for the current user account) that checks for updates every 4 hours, and at logon.  

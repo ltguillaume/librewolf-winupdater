@@ -1,5 +1,5 @@
 ; LibreWolf WinUpdater - https://github.com/ltGuillaume/LibreWolf-WinUpdater
-;@Ahk2Exe-SetFileVersion 1.3.3
+;@Ahk2Exe-SetFileVersion 1.4.0
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf WinUpdater
@@ -158,8 +158,7 @@ If !Checksum1
 	Die(_FindChecksumError)
 
 ; Compare checksum with downloaded file
-RunWait, powershell -NoProfile -Command "Exit (Get-FileHash """%SetupFile%""").Hash -eq """%Checksum1%"""",, Hide
-If !ErrorLevel
+If (Checksum1 <> Hash(SetupFile))
 	Die(_ChecksumMatchError)
 
 ; Extract archive of portable version
@@ -167,7 +166,7 @@ If IsPortable {
 	If Verbose
 		TrayTip, %_Extracting%, v%NewVersion%,, 16
 	FileRemoveDir, LibreWolf-Extracted, 1
-	RunWait, powershell.exe -NoProfile -Command "Expand-Archive """%SetupFile%""" LibreWolf-Extracted" -ErrorAction Stop,, Hide
+	FileCopyDir, %SetupFile%, LibreWolf-Extracted
 	If ErrorLevel
 		Die(_ExtractionError)
 	Loop, Files, LibreWolf-Extracted\*, D
@@ -223,6 +222,92 @@ If ChecksumFile
 If IsPortable
 	FileRemoveDir, LibreWolf-Extracted, 1
 FileDelete, %A_ScriptFullPath%.pbak
+
+Hash(filePath, hashType = 4) {
+; https://www.autohotkey.com/board/topic/66139-ahk-l-calculating-md5sha-checksum-from-file/
+	PROV_RSA_AES := 24
+	CRYPT_VERIFYCONTEXT := 0xF0000000
+	BUFF_SIZE := 1024 * 1024	; 1MB
+	HP_HASHVAL := 0x0002
+	HP_HASHSIZE := 0x0004
+
+	HASH_ALG := hashType = 1 ? (CALG_MD2 := 32769) : HASH_ALG
+	HASH_ALG := hashType = 2 ? (CALG_MD5 := 32771) : HASH_ALG
+	HASH_ALG := hashType = 3 ? (CALG_SHA := 32772) : HASH_ALG
+	HASH_ALG := hashType = 4 ? (CALG_SHA_256 := 32780) : HASH_ALG
+	HASH_ALG := hashType = 5 ? (CALG_SHA_384 := 32781) : HASH_ALG
+	HASH_ALG := hashType = 6 ? (CALG_SHA_512 := 32782) : HASH_ALG
+
+	f := FileOpen(filePath, "r", "CP0")
+	If !IsObject(f)
+		Return 0
+
+	If !hModule := DllCall("GetModuleHandleW", "str", "Advapi32.dll", "Ptr")
+		hModule := DllCall("LoadLibraryW", "str", "Advapi32.dll", "Ptr")
+
+	If !DllCall("Advapi32\CryptAcquireContextW"
+			,"Ptr*", hCryptProv
+			,"Uint", 0
+			,"Uint", 0
+			,"Uint", PROV_RSA_AES
+			,"UInt", CRYPT_VERIFYCONTEXT)
+		Goto, FreeHandles
+
+	If !DllCall("Advapi32\CryptCreateHash"
+			, "Ptr",  hCryptProv
+			, "Uint", HASH_ALG
+			, "Uint", 0
+			, "Uint", 0
+			, "Ptr*", hHash)
+		Goto, FreeHandles
+
+	VarSetCapacity(read_buf, BUFF_SIZE, 0)
+	hCryptHashData := DllCall("GetProcAddress", "Ptr", hModule, "AStr", "CryptHashData", "Ptr")
+
+	While (cbCount := f.RawRead(read_buf, BUFF_SIZE)) {
+		If (cbCount = 0)
+			Break
+
+		If !DllCall(hCryptHashData
+				, "Ptr",  hHash
+				, "Ptr",  &read_buf
+				, "Uint", cbCount
+				, "Uint", 0)
+			Goto, FreeHandles
+	}
+
+	If !DllCall("Advapi32\CryptGetHashParam"
+			, "Ptr",   hHash
+			, "Uint",  HP_HASHSIZE
+			, "Uint*", HashLen
+			, "Uint*", HashLenSize := 4
+			, "UInt",  0) 
+		Goto, FreeHandles
+
+	VarSetCapacity(pbHash, HashLen, 0)
+	If !DllCall("Advapi32\CryptGetHashParam"
+			, "Ptr",   hHash
+			, "Uint",  HP_HASHVAL
+			, "Ptr",   &pbHash
+			, "Uint*", HashLen
+			, "UInt",  0)
+		Goto, FreeHandles	
+
+	SetFormat, Integer, Hex
+	Loop, %HashLen%
+	{
+		num := NumGet(pbHash, A_Index - 1, "UChar")
+		hashVal .= SubStr((num >> 4), 0) . substr((num & 0xf), 0)
+	}
+	SetFormat, Integer, D
+		
+FreeHandles:
+	f.Close()
+	DllCall("FreeLibrary", "Ptr", hModule)
+	DllCall("Advapi32\CryptDestroyHash", "Ptr", hHash)
+	DllCall("Advapi32\CryptReleaseContext", "Ptr", hCryptProv, "UInt",0)
+	Return hashVal
+}
 
 Die(Error) {
 	Global IniFile, Verbose, _Title, _NoChangesMade
