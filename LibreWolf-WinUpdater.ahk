@@ -1,5 +1,5 @@
 ; LibreWolf WinUpdater - https://github.com/ltGuillaume/LibreWolf-WinUpdater
-;@Ahk2Exe-SetFileVersion 1.3.2
+;@Ahk2Exe-SetFileVersion 1.3.3
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf WinUpdater
@@ -225,7 +225,7 @@ If IsPortable
 FileDelete, %A_ScriptFullPath%.pbak
 
 Die(Error) {
-	Global Verbose, _Title, _NoChangesMade
+	Global IniFile, Verbose, _Title, _NoChangesMade
 	IniWrite, %Error%, %IniFile%, Log, LastResult
 	If Verbose
 		MsgBox, 48, %_Title%, %Error%`n%_NoChangesMade%
