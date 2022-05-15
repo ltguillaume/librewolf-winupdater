@@ -31,7 +31,7 @@ _NoChangesMade       = No changes were made.
 _Extracting          = Extracting update for LibreWolf...
 _Installing          = Installing update for LibreWolf...
 _SilentUpdateError   = Silent update did not complete.`nDo you want to run the interactive installer?
-_NewVersionFound     = A new version has been found.`nStart the update by closing LibreWolf.
+_NewVersionFound     = New version found!`nClose LibreWolf to start the update.
 _NoNewVersion        = No new LibreWolf version found.
 _ExtractionError     = Could not extract archive of portable version.
 _MoveToTargetError   = Could not move the extracted files into the target folder.
@@ -117,7 +117,7 @@ If (NewVersion = CurrentVersion Or NewVersion = LastUpdateTo) {
 ; Notify and wait if LibreWolf is running
 Process, Exist, %ExeFile%
 If ErrorLevel {
-	TrayTip,, %_NewVersionFound%,, 16
+	TrayTip, %_NewVersionFound%, v%NewVersion%,, 16
 	Process, WaitClose, %ExeFile%
 	Goto, DownloadInfo
 }
@@ -125,7 +125,7 @@ If ErrorLevel {
 ; Get setup file URL
 Download  := File.Read(4096)
 FilenameEnd := IsPortable ? "portable.zip" : "setup.exe"
-RegExMatch(Download, "i)" FilenameEnd """,""url"":""(\Qhttps://gitlab.com/librewolf-community/browser/windows/uploads/\E.+?\/(librewolf-.+?" FilenameEnd "))", DownloadUrl)
+RegExMatch(Download, "i)" FilenameEnd """,""url"":""(.+?windows/+uploads/+.+?\/+(librewolf-.+?" FilenameEnd "))", DownloadUrl)
 ;MsgBox, Downloading`n%DownloadUrl1%`nto`n%DownloadUrl2%
 If !DownloadUrl1 Or !DownloadUrl2
 	Die(_FindUrlError)
@@ -140,7 +140,7 @@ If !FileExist(SetupFile)
 
 ; Get checksum file
 ChecksumFile = LibreWolf-Checksum.txt
-RegExMatch(Download, "i)sha256sums.txt"",""url"":""(\Qhttps://gitlab.com/librewolf-community/browser/windows/uploads/\E.+?/sha256sums\.txt)", ChecksumUrl)
+RegExMatch(Download, "i)sha256sums.txt"",""url"":""(.+?windows/+uploads/+.+?/+sha256sums\.txt)", ChecksumUrl)
 If !ChecksumUrl1
 	Die(_FindSumsUrlError)
 UrlDownloadToFile, %ChecksumUrl1%, %ChecksumFile%
