@@ -1,5 +1,5 @@
 ; LibreWolf WinUpdater - https://github.com/ltGuillaume/LibreWolf-WinUpdater
-;@Ahk2Exe-SetFileVersion 1.3.3
+;@Ahk2Exe-SetFileVersion 1.3.4
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf WinUpdater
@@ -97,7 +97,7 @@ If !File
 	Die(_DownloadJsonError)
 
 ; Compare versions
-ReleaseInfo := File.Read(64)
+ReleaseInfo := File.Read()
 RegExMatch(ReleaseInfo, "i)Release v(.+?)""", Release)
 NewVersion := Release1
 StrReplace(NewVersion, ".",, DotCount)
@@ -123,9 +123,8 @@ If ErrorLevel {
 }
 
 ; Get setup file URL
-Download  := File.Read(4096)
 FilenameEnd := IsPortable ? "portable.zip" : "setup.exe"
-RegExMatch(Download, "i)" FilenameEnd """,""url"":""(.+?windows/+uploads/+.+?\/+(librewolf-.+?" FilenameEnd "))", DownloadUrl)
+RegExMatch(ReleaseInfo, "i)" FilenameEnd """,""url"":""(.+?windows/+uploads/+.+?\/+(librewolf-.+?" FilenameEnd "))", DownloadUrl)
 ;MsgBox, Downloading`n%DownloadUrl1%`nto`n%DownloadUrl2%
 If !DownloadUrl1 Or !DownloadUrl2
 	Die(_FindUrlError)
@@ -140,7 +139,7 @@ If !FileExist(SetupFile)
 
 ; Get checksum file
 ChecksumFile = LibreWolf-Checksum.txt
-RegExMatch(Download, "i)sha256sums.txt"",""url"":""(.+?windows/+uploads/+.+?/+sha256sums\.txt)", ChecksumUrl)
+RegExMatch(ReleaseInfo, "i)sha256sums.txt"",""url"":""(.+?windows/+uploads/+.+?/+sha256sums\.txt)", ChecksumUrl)
 If !ChecksumUrl1
 	Die(_FindSumsUrlError)
 UrlDownloadToFile, %ChecksumUrl1%, %ChecksumFile%
