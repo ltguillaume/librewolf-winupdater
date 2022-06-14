@@ -31,12 +31,11 @@ _NoChangesMade       = No changes were made.
 _Extracting          = Extracting update for LibreWolf...
 _Installing          = Installing update for LibreWolf...
 _SilentUpdateError   = Silent update did not complete.`nDo you want to run the interactive installer?
-_NewVersionFound     = A new version has been found.`nStart the update by closing LibreWolf.
-_NoNewVersion        = No new LibreWolf version found.
+_NewVersionFound     = A new version is available`nClose LibreWolf to start the update
+_NoNewVersion        = No new LibreWolf version found
 _ExtractionError     = Could not extract archive of portable version.
 _MoveToTargetError   = Could not move the extracted files into the target folder.
 _IsUpdated           = LibreWolf has just been updated
-_From                = from
 _To                  = to
 
 ; Preparation
@@ -103,10 +102,8 @@ If DotCount < 2
 ;MsgBox, ReleaseInfo = %ReleaseInfo%`nCurrentVersion = %CurrentVersion%`nNewVersion = %NewVersion%
 IniRead, LastUpdateTo, %IniFile%, Log, LastUpdateTo, False
 If (NewVersion = CurrentVersion Or NewVersion = LastUpdateTo) {
-	If !RunningPortable And Verbose {
-		TrayTip,, %_NoNewVersion%,, 16
-		Sleep, 6000
-	}
+	If !RunningPortable And Verbose
+		Notify(_NoNewVersion, CurrentVersion, 6000)
 	IniWrite, %_NoNewVersion%, %IniFile%, Log, LastResult
 	Exit
 }
@@ -114,7 +111,7 @@ If (NewVersion = CurrentVersion Or NewVersion = LastUpdateTo) {
 ; Notify and wait if LibreWolf is running
 Process, Exist, %ExeFile%
 If ErrorLevel {
-	TrayTip, %_NewVersionFound%, v%NewVersion%,, 16
+	Notify(_NewVersionFound)
 	Process, WaitClose, %ExeFile%
 	Goto, DownloadInfo
 }
@@ -128,7 +125,7 @@ If !DownloadUrl1 Or !DownloadUrl2
 
 ; Download setup file
 If Verbose
-	TrayTip, %_Downloading%, v%NewVersion%,, 16
+	Notify(_Downloading)
 SetupFile := DownloadUrl2
 UrlDownloadToFile, %DownloadUrl1%, %SetupFile%
 If !FileExist(SetupFile)
@@ -152,7 +149,7 @@ If (Checksum1 <> Hash(SetupFile))
 ; Extract archive of portable version
 If IsPortable {
 	If Verbose
-		TrayTip, %_Extracting%, v%NewVersion%,, 16
+		Notify(_Extracting)
 	FileRemoveDir, LibreWolf-Extracted, 1
 	FileCopyDir, %SetupFile%, LibreWolf-Extracted	; Needs "Zip & Cab folder" (could have been removed by e.g. NTLite)
 	If ErrorLevel
@@ -181,7 +178,7 @@ If IsPortable {
 
 ; Or run silent setup
 If Verbose
-	TrayTip, %_Installing%, v%NewVersion%,, 16
+	Notify(_Installing)
 Folder := StrReplace(Path, ExeFile)
 ;MsgBox, %SetupFile% /S /D=%Folder%
 RunWait, %SetupFile% /S /D=%Folder%,, UseErrorLevel
@@ -198,9 +195,7 @@ IniWrite, %CurrentTime%, %IniFile%, Log, LastUpdate
 IniWrite, %CurrentVersion%, %IniFile%, Log, LastUpdateFrom
 IniWrite, %NewVersion%, %IniFile%, Log, LastUpdateTo
 IniWrite, %_IsUpdated% %_From% v%CurrentVersion% %_To% v%NewVersion%., %IniFile%, Log, LastResult
-TrayTip, %_IsUpdated%, %_From% v%CurrentVersion% %_To% v%NewVersion%,, 16
-If !RunningPortable
-	Sleep, 60000
+Notify(_IsUpdated, CurrentVersion " " _To " v" NewVersion, RunningPortable ? 0 : 60000)
 Exit
 
 ; Clean up
@@ -215,6 +210,16 @@ If SetupFile
 If IsPortable
 	FileRemoveDir, LibreWolf-Extracted, 1
 FileDelete, %A_ScriptFullPath%.pbak
+
+Notify(Msg, Ver = 0, Delay = 0) {
+	Global NewVersion
+	If !Ver
+		Ver := NewVersion
+	Menu, Tray, Tip, %Msg%
+	TrayTip, %Msg%, v%Ver%,, 16
+	If Delay
+		Sleep, %Delay%
+}
 
 Download(URL) {
 	Try {
