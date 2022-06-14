@@ -166,18 +166,28 @@ If IsPortable {
 	If Verbose
 		TrayTip, %_Extracting%, v%NewVersion%,, 16
 	FileRemoveDir, LibreWolf-Extracted, 1
-	FileCopyDir, %SetupFile%, LibreWolf-Extracted
+	FileCopyDir, %SetupFile%, LibreWolf-Extracted	; Needs "Zip & Cab folder" (could have been removed by e.g. NTLite)
 	If ErrorLevel
 		Die(_ExtractionError)
 	Loop, Files, LibreWolf-Extracted\*, D
 	{
-		FileMoveDir, %A_LoopFilePath%\LibreWolf, %A_ScriptDir%\LibreWolf, 2
-		If Errorlevel
-			Die(_MoveToTargetError)
+;MsgBox, Traversing %A_LoopFilePath%
 		If FileExist(A_LoopFilePath "\LibreWolf-WinUpdater.exe")
 			FileMove, %A_ScriptFullPath%, %A_ScriptFullPath%.pbak, 1
-		FileMove, %A_LoopFilePath%\*.*, %A_ScriptDir%\, 1
+		SetWorkingDir, %A_LoopFilePath%
+		Loop, Files, *, R
+		{
+			FileGetSize, CurrentFileSize, %A_ScriptDir%\%A_LoopFilePath%
+;MsgBox, % A_LoopFilePath "`n" A_LoopFileSize "`n" CurrentFileSize "`n" Hash(A_LoopFilePath) "`n" Hash(A_ScriptDir "\" A_LoopFilePath)
+			If (!FileExist(A_ScriptDir "\" A_LoopFilePath) Or A_LoopFileSize <> CurrentFileSize Or Hash(A_LoopFilePath) <> Hash(A_ScriptDir "\" A_LoopFilePath)) {
+;MsgBox, Moving %A_LoopFilePath%
+				FileMove, %A_LoopFilePath%, %A_ScriptDir%\%A_LoopFilePath%, 1
+				If Errorlevel
+					Die(_MoveToTargetError)
+			}
+		}
 	}
+	SetWorkingDir, %Temp%
 	Goto, Report
 }
 
