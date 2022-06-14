@@ -90,14 +90,11 @@ If ErrorLevel
 ; Download release info
 DownloadInfo:
 SetWorkingDir, %Temp%
-ReleaseFile = LibreWolf-Release.json
-UrlDownloadToFile, https://gitlab.com/api/v4/projects/13852981/releases, %ReleaseFile%
-File := FileOpen(ReleaseFile, "r")
-If !File
+ReleaseInfo := Download("https://gitlab.com/api/v4/projects/13852981/releases")
+If !ReleaseInfo
 	Die(_DownloadJsonError)
 
 ; Compare versions
-ReleaseInfo := File.Read(64)
 RegExMatch(ReleaseInfo, "i)Release v(.+?)""", Release)
 NewVersion := Release1
 StrReplace(NewVersion, ".",, DotCount)
@@ -123,9 +120,8 @@ If ErrorLevel {
 }
 
 ; Get setup file URL
-Download  := File.Read(4096)
 FilenameEnd := IsPortable ? "portable.zip" : "setup.exe"
-RegExMatch(Download, "i)" FilenameEnd """,""url"":""(.+?windows/+uploads/+.+?\/+(librewolf-.+?" FilenameEnd "))", DownloadUrl)
+RegExMatch(ReleaseInfo, "i)" FilenameEnd """,""url"":""(.+?windows/+uploads/+.+?\/+(librewolf-.+?" FilenameEnd "))", DownloadUrl)
 ;MsgBox, Downloading`n%DownloadUrl1%`nto`n%DownloadUrl2%
 If !DownloadUrl1 Or !DownloadUrl2
 	Die(_FindUrlError)
@@ -139,21 +135,13 @@ If !FileExist(SetupFile)
 	Die(_DownloadSetupError)
 
 ; Get checksum file
-ChecksumFile = LibreWolf-Checksum.txt
-RegExMatch(Download, "i)sha256sums.txt"",""url"":""(.+?windows/+uploads/+.+?/+sha256sums\.txt)", ChecksumUrl)
+RegExMatch(ReleaseInfo, "i)sha256sums.txt"",""url"":""(.+?windows/+uploads/+.+?/+sha256sums\.txt)", ChecksumUrl)
 If !ChecksumUrl1
 	Die(_FindSumsUrlError)
-UrlDownloadToFile, %ChecksumUrl1%, %ChecksumFile%
+Checksum := Download(ChecksumUrl1)
 
 ; Get checksum for downloaded file
-File.Close()
-File := FileOpen(ChecksumFile, "r")
-While !File.AtEOF {
-	ChecksumLine := File.ReadLine()
-	RegExMatch(ChecksumLine, "i)(.+?)\s+\Q" SetupFile "\E", Checksum)
-	If Checksum1
-		Break
-}
+RegExMatch(Checksum, "i)(\S+?)\s+\Q" SetupFile "\E", Checksum)
 If !Checksum1
 	Die(_FindChecksumError)
 
@@ -219,19 +207,27 @@ Exit
 Exit:
 If RunningPortable
 	Run, %A_ScriptDir%\LibreWolf-Portable.exe
-File.Close()
 FormatTime, CurrentTime
 IniWrite, %CurrentTime%, %IniFile%, Log, LastRun
 Sleep, 2000
-If ReleaseFile
-	FileDelete, %ReleaseFile%
 If SetupFile
 	FileDelete, %SetupFile%
-If ChecksumFile
-	FileDelete, %ChecksumFile%
 If IsPortable
 	FileRemoveDir, LibreWolf-Extracted, 1
 FileDelete, %A_ScriptFullPath%.pbak
+
+Download(URL) {
+	Try {
+		Object := ComObjCreate("WinHttp.WinHttpRequest.5.1")
+		Object.Open("GET", URL)
+		Object.Send()
+		Result := Object.ResponseText
+;MsgBox, %Result%
+		Return Result
+	} Catch {
+		Return False
+	}
+}
 
 Hash(filePath, hashType = 4) {
 ; https://www.autohotkey.com/board/topic/66139-ahk-l-calculating-md5sha-checksum-from-file/
