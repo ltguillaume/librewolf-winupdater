@@ -11,6 +11,7 @@
 
 ExeFile         := "librewolf.exe"
 IniFile         := A_ScriptDir "\LibreWolf-WinUpdater.ini"
+ChangesMade     := False
 IsPortable      := False
 RunningPortable := A_Args[1] = "/Portable"
 Verbose         := A_Args[1] <> "/Scheduled"
@@ -27,6 +28,7 @@ _DownloadSetupError  = Could not download the LibreWolf setup file.
 _FindSumsUrlError    = Could not find the URL to the checksum file.
 _FindChecksumError   = Could not find the checksum for the downloaded file.
 _ChecksumMatchError  = The file checksum did not match, so it's possible the download failed.
+_ChangesMade         = However, new files were written to the LibreWolf folder!
 _NoChangesMade       = No changes were made.
 _Extracting          = Extracting update for LibreWolf...
 _Installing          = Installing update for LibreWolf...
@@ -34,7 +36,7 @@ _SilentUpdateError   = Silent update did not complete.`nDo you want to run the i
 _NewVersionFound     = A new version is available`nClose LibreWolf to start the update
 _NoNewVersion        = No new LibreWolf version found
 _ExtractionError     = Could not extract archive of portable version.
-_MoveToTargetError   = Could not move the extracted files into the target folder.
+_MoveToTargetError   = Could not move the following file into the target folder:
 _IsUpdated           = LibreWolf has just been updated
 _To                  = to
 
@@ -152,8 +154,12 @@ If IsPortable {
 		Notify(_Extracting)
 	FileRemoveDir, LibreWolf-Extracted, 1
 	FileCopyDir, %SetupFile%, LibreWolf-Extracted	; Needs "Zip & Cab folder" (could have been removed by e.g. NTLite)
-	If ErrorLevel
-		Die(_ExtractionError)
+	If ErrorLevel {	; PowerShell fallback
+		FileRemoveDir, LibreWolf-Extracted, 1
+		RunWait, powershell.exe -NoProfile -Command "Expand-Archive """%SetupFile%""" LibreWolf-Extracted" -ErrorAction Stop,, Hide
+		If ErrorLevel
+			Die(_ExtractionError)
+	}
 	Loop, Files, LibreWolf-Extracted\*, D
 	{
 ;MsgBox, Traversing %A_LoopFilePath%
@@ -164,11 +170,14 @@ If IsPortable {
 		{
 			FileGetSize, CurrentFileSize, %A_ScriptDir%\%A_LoopFilePath%
 ;MsgBox, % A_LoopFilePath "`n" A_LoopFileSize "`n" CurrentFileSize "`n" Hash(A_LoopFilePath) "`n" Hash(A_ScriptDir "\" A_LoopFilePath)
+			If !FileExist(A_ScriptDir "\" A_LoopFileDir)
+				FileCreateDir, %A_ScriptDir%\%A_LoopFileDir%
 			If (!FileExist(A_ScriptDir "\" A_LoopFilePath) Or A_LoopFileSize <> CurrentFileSize Or Hash(A_LoopFilePath) <> Hash(A_ScriptDir "\" A_LoopFilePath)) {
 ;MsgBox, Moving %A_LoopFilePath%
 				FileMove, %A_LoopFilePath%, %A_ScriptDir%\%A_LoopFilePath%, 1
 				If Errorlevel
-					Die(_MoveToTargetError)
+					Die(_MoveToTargetError " " A_LoopFilePath)
+				ChangesMade := True
 			}
 		}
 	}
@@ -321,9 +330,9 @@ FreeHandles:
 }
 
 Die(Error) {
-	Global IniFile, Verbose, _Title, _NoChangesMade
+	Global IniFile, ChangesMade, Verbose, _Title, _ChangesMade, _NoChangesMade
 	IniWrite, %Error%, %IniFile%, Log, LastResult
 	If Verbose
-		MsgBox, 48, %_Title%, %Error%`n%_NoChangesMade%
+		MsgBox, 48, %_Title%, % Error "`n" (ChangesMade ? _ChangesMade : _NoChangesMade)
 	Exit
 }
