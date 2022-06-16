@@ -20,22 +20,22 @@ Verbose         := A_Args[1] <> "/Scheduled"
 _Title               = LibreWolf WinUpdater
 _GetPathError        = Could not find the path to LibreWolf.`nBrowse to %ExeFile% in the following dialog.
 _SelectFileTitle     = %_Title% - Select %ExeFile%...
-_GetVersionError     = Could not determine current version of LibreWolf.
-_DownloadJsonError   = Could not download releases file to check for a new version.
+_GetVersionError     = Could not determine the current version.
+_DownloadJsonError   = Could not download the releases file to check for a new version.
 _FindUrlError        = Could not find the URL to download LibreWolf.
-_Downloading         = Downloading update for LibreWolf...
-_DownloadSetupError  = Could not download the LibreWolf setup file.
+_Downloading         = Downloading new version...
+_DownloadSetupError  = Could not download the setup file.
 _FindSumsUrlError    = Could not find the URL to the checksum file.
 _FindChecksumError   = Could not find the checksum for the downloaded file.
 _ChecksumMatchError  = The file checksum did not match, so it's possible the download failed.
-_ChangesMade         = However, new files were written to the LibreWolf folder!
+_ChangesMade         = However, new files were written to the target folder!
 _NoChangesMade       = No changes were made.
-_Extracting          = Extracting update for LibreWolf...
-_Installing          = Installing update for LibreWolf...
+_Extracting          = Extracting portable version...
+_Installing          = Installing new version...
 _SilentUpdateError   = Silent update did not complete.`nDo you want to run the interactive installer?
 _NewVersionFound     = A new version is available`nClose LibreWolf to start the update
-_NoNewVersion        = No new LibreWolf version found
-_ExtractionError     = Could not extract archive of portable version.
+_NoNewVersion        = No new version found
+_ExtractionError     = Could not extract the portable version's archive.
 _MoveToTargetError   = Could not move the following file into the target folder:
 _IsUpdated           = LibreWolf has just been updated
 _To                  = to
@@ -176,7 +176,7 @@ If IsPortable {
 ;MsgBox, Moving %A_LoopFilePath%
 				FileMove, %A_LoopFilePath%, %A_ScriptDir%\%A_LoopFilePath%, 1
 				If Errorlevel
-					Die(_MoveToTargetError " " A_LoopFilePath)
+					Die(_MoveToTargetError "`n" A_LoopFilePath)
 				ChangesMade := True
 			}
 		}
@@ -203,7 +203,7 @@ FormatTime, CurrentTime
 IniWrite, %CurrentTime%, %IniFile%, Log, LastUpdate
 IniWrite, %CurrentVersion%, %IniFile%, Log, LastUpdateFrom
 IniWrite, %NewVersion%, %IniFile%, Log, LastUpdateTo
-IniWrite, %_IsUpdated% %_From% v%CurrentVersion% %_To% v%NewVersion%., %IniFile%, Log, LastResult
+IniWrite, %_IsUpdated% %_From% v%CurrentVersion% %_To% v%NewVersion%, %IniFile%, Log, LastResult
 Notify(_IsUpdated, CurrentVersion " " _To " v" NewVersion, RunningPortable ? 0 : 60000)
 Exit
 
