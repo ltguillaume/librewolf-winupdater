@@ -42,7 +42,6 @@ _To                  = to
 
 ; Preparation
 #NoEnv
-EnvGet Temp, Temp
 OnExit, Exit
 FileGetVersion, UpdaterVersion, %A_ScriptFullPath%
 UpdaterVersion := SubStr(UpdaterVersion, 1, -2)
@@ -90,7 +89,7 @@ If ErrorLevel
 
 ; Download release info
 DownloadInfo:
-SetWorkingDir, %Temp%
+SetWorkingDir, %A_Temp%
 ReleaseInfo := Download("https://gitlab.com/api/v4/projects/13852981/releases")
 If !ReleaseInfo
 	Die(_DownloadJsonError)
@@ -181,7 +180,7 @@ If IsPortable {
 			}
 		}
 	}
-	SetWorkingDir, %Temp%
+	SetWorkingDir, %A_Temp%
 	Goto, Report
 }
 
