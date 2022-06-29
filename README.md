@@ -11,7 +11,7 @@ An attempt to make updating LibreWolf for Windows much easier.
 
 ## Getting started
 - Download and extract the latest [`LibreWolf-WinUpdater_x.x.x.zip`](https://github.com/ltGuillaume/LibreWolf-WinUpdater/releases) to a folder you like, e.g. `%AppData%\LibreWolf`. Run `LibreWolf-WinUpdater.exe` to check for an update for the installed LibreWolf version. It will then be downloaded and installed immediately.  
-  If LibreWolf is running, the updater will notify you of the new version, and update as soon as you close the browser. The last result can be found in `LibreWolf-WinUpdater.ini`.  
+  If LibreWolf is running, the updater will notify you of the new version and start the update as soon as you close the browser. The last result can be found in `LibreWolf-WinUpdater.ini`.  
 - Or, if you use the __portable release__ of LibreWolf, place `LibreWolf-WinUpdater.exe` in the same folder as `LibreWolf-Portable.exe`. It will then automatically update LibreWolf whenever you run `LibreWolf-Portable.exe` (checking for a new version max. once a day).  
 
 ## Scheduled updates
@@ -22,8 +22,8 @@ An attempt to make updating LibreWolf for Windows much easier.
 - You can remove the scheduled task by right-clicking on `ScheduledTask-Remove.ps1` and choosing `Run with PowerShell`.
 
 ## Remarks
-- The updater needs to be able to write to `LibreWolf-WinUpdater.ini` in its own folder, so make sure it's got permission to do so.
-- The ini-file contains the last result of checking for updates and the last update action.
+- The updater needs to be able to write to `LibreWolf-WinUpdater.ini` in its own folder, so make sure it has permission to do so.
+- The ini-file contains a `[Log]` section that shows the last update check result and the last update action.
 
 ## Credits
 * Original icon by the [LibreWolf Community](https://gitlab.com/librewolf-community/branding/-/tree/master/icon)
