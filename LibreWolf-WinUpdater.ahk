@@ -18,6 +18,7 @@ Verbose         := A_Args[1] <> "/Scheduled"
 
 ; Strings
 _Title               = LibreWolf WinUpdater
+_NoDefaultBrowser     = Could not open your default browser.
 _GetPathError        = Could not find the path to LibreWolf.`nBrowse to %ExeFile% in the following dialog.
 _SelectFileTitle     = %_Title% - Select %ExeFile%...
 _GetVersionError     = Could not determine the current version.
@@ -53,7 +54,15 @@ Menu, Tray, Add, Exit, Exit
 Menu, Tray, Default, WinUpdater
 
 About(ItemName) {
-	Run, https://github.com/ltGuillaume/LibreWolf-%ItemName%
+	Url = https://github.com/ltGuillaume/LibreWolf-%ItemName%
+	Try Run, %Url%
+	Catch {
+		RegRead, DefBrowser, HKCR, .html
+		RegRead, DefBrowser, HKCR, %DefBrowser%\Shell\Open\Command
+		Run, % StrReplace(DefBrowser, "%1", Url)
+		If ErrorLevel
+		MsgBox, 48, %_Title%, %_NoDefaultBrowser%
+	}
 }
 
 ; Get the path to LibreWolf
