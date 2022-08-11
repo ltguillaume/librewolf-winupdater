@@ -3,9 +3,12 @@ If (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
   # Relaunch as an elevated process
   $User = [Environment]::UserName
   $Script = $MyInvocation.MyCommand.Path
-  Start-Process powershell.exe -Verb RunAs "-ExecutionPolicy RemoteSigned -NoExit -File `"$PSCommandPath`" `"${User}`""
+  Start-Process powershell.exe -Verb RunAs "-ExecutionPolicy RemoteSigned -File `"$PSCommandPath`" `"${User}`""
   Exit
 }
 
-Unregister-ScheduledTask -TaskName "LibreWolf WinUpdater ($Args)" -Confirm:$False
+$User = If ($Args[0]) {$Args[0]} Else {[Environment]::UserName}
+
+Unregister-ScheduledTask -TaskName "LibreWolf WinUpdater ($User)" -Confirm:$False
 Write-Output Done.
+[Console]::ReadKey()
