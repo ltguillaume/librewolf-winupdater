@@ -1,5 +1,5 @@
 ; LibreWolf WinUpdater - https://github.com/ltGuillaume/LibreWolf-WinUpdater
-;@Ahk2Exe-SetFileVersion 1.4.0
+;@Ahk2Exe-SetFileVersion 1.4.1
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf WinUpdater
@@ -119,12 +119,18 @@ If (NewVersion = CurrentVersion Or NewVersion = LastUpdateTo) {
 }
 
 ; Notify and wait if LibreWolf is running
-Process, Exist, %ExeFile%
-If ErrorLevel {
-	Notify(_NewVersionFound)
-	Process, WaitClose, %ExeFile%
-	Goto, DownloadInfo
+PathDS   := StrReplace(Path, "\", "\\")
+Notified := False
+For Proc in ComObjGet("winmgmts:").ExecQuery("Select ProcessId from Win32_Process where ExecutablePath='" PathDS "'") {
+	If !Notified {
+		Notify(_NewVersionFound)
+		Notified := True
+	}
+	Process, WaitClose, % Proc.ProcessId
 }
+; Check for newer version since notification was shown
+If Notified
+	Goto, DownloadInfo
 
 ; Get setup file URL
 FilenameEnd := IsPortable ? "portable.zip" : "setup.exe"
