@@ -1,5 +1,5 @@
 ; LibreWolf WinUpdater - https://github.com/ltGuillaume/LibreWolf-WinUpdater
-;@Ahk2Exe-SetFileVersion 1.4.1
+;@Ahk2Exe-SetFileVersion 1.4.2
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf WinUpdater
@@ -99,7 +99,7 @@ If ErrorLevel
 ; Download release info
 DownloadInfo:
 SetWorkingDir, %A_Temp%
-ReleaseInfo := Download("https://gitlab.com/api/v4/projects/13852981/releases")
+ReleaseInfo := Download("https://gitlab.com/api/v4/projects/13852981/releases/permalink/latest")
 If !ReleaseInfo
 	Die(_DownloadJsonError)
 
