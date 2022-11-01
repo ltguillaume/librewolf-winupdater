@@ -1,5 +1,5 @@
 ; LibreWolf WinUpdater - https://github.com/ltGuillaume/LibreWolf-WinUpdater
-;@Ahk2Exe-SetFileVersion 1.4.2
+;@Ahk2Exe-SetFileVersion 1.4.3
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf WinUpdater
@@ -18,7 +18,8 @@ Verbose         := A_Args[1] <> "/Scheduled"
 
 ; Strings
 _Title               = LibreWolf WinUpdater
-_NoDefaultBrowser     = Could not open your default browser.
+_IsRunningError      = is already running.
+_NoDefaultBrowser    = Could not open your default browser.
 _GetPathError        = Could not find the path to LibreWolf.`nBrowse to %ExeFile% in the following dialog.
 _SelectFileTitle     = %_Title% - Select %ExeFile%...
 _GetVersionError     = Could not determine the current version.
@@ -34,11 +35,11 @@ _NoChangesMade       = No changes were made.
 _Extracting          = Extracting portable version...
 _Installing          = Installing new version...
 _SilentUpdateError   = Silent update did not complete.`nDo you want to run the interactive installer?
-_NewVersionFound     = A new version is available`nClose LibreWolf to start the update
-_NoNewVersion        = No new version found
+_NewVersionFound     = A new version is available.`nClose LibreWolf to start updating.
+_NoNewVersion        = No new version found.
 _ExtractionError     = Could not extract the portable version's archive.
 _MoveToTargetError   = Could not move the following file into the target folder:
-_IsUpdated           = LibreWolf has just been updated
+_IsUpdated           = LibreWolf has just been updated.
 _To                  = to
 
 ; Preparation
@@ -64,6 +65,14 @@ About(ItemName) {
 		MsgBox, 48, %_Title%, %_NoDefaultBrowser%
 	}
 }
+
+; Check if another instance is running
+DetectHiddenWindows, On
+SetTitleMatchMode 2
+WinGet, Self, List, %A_ScriptName% ahk_exe %A_ScriptName%
+Loop, %Self%
+	If (Self%A_Index% != A_ScriptHwnd)
+		Die(_Title " " _IsRunningError)
 
 ; Get the path to LibreWolf
 If FileExist(A_ScriptDir "\LibreWolf-Portable.exe") {
@@ -104,7 +113,7 @@ If !ReleaseInfo
 	Die(_DownloadJsonError)
 
 ; Compare versions
-RegExMatch(ReleaseInfo, "i)Release v(.+?)""", Release)
+RegExMatch(ReleaseInfo, "i)tag_name"":\s*""v?(.+?)""", Release)
 NewVersion := Release1
 StrReplace(NewVersion, ".",, DotCount)
 If DotCount < 2
