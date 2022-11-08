@@ -22,6 +22,7 @@ An attempt to make updating LibreWolf for Windows much easier.
 - You can remove the scheduled task by right-clicking on `ScheduledTask-Remove.ps1` and choosing `Run with PowerShell`.
 
 ## Remarks
+- If you're having issues with the updater on __Windows 7__, please have a look at [these instructions](https://github.com/ltGuillaume/LibreWolf-WinUpdater/issues/15).
 - The updater needs to be able to write to `LibreWolf-WinUpdater.ini` in its own folder, so make sure it has permission to do so.
 - The ini-file contains a `[Log]` section that shows the last update check result and the last update action.
 
