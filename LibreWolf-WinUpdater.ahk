@@ -1,5 +1,5 @@
 ; LibreWolf WinUpdater - https://github.com/ltGuillaume/LibreWolf-WinUpdater
-;@Ahk2Exe-SetFileVersion 1.4.3
+;@Ahk2Exe-SetFileVersion 1.4.4
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf WinUpdater
@@ -130,7 +130,7 @@ If (NewVersion = CurrentVersion Or NewVersion = LastUpdateTo) {
 ; Notify and wait if LibreWolf is running
 PathDS   := StrReplace(Path, "\", "\\")
 Notified := False
-For Proc in ComObjGet("winmgmts:").ExecQuery("Select ProcessId from Win32_Process where ExecutablePath='" PathDS "'") {
+For Proc in ComObjGet("winmgmts:").ExecQuery("Select ProcessId from Win32_Process where ExecutablePath=""" PathDS """") {
 	If !Notified {
 		Notify(_NewVersionFound)
 		Notified := True
