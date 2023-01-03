@@ -1,11 +1,7 @@
-<a href="https://buymeacoff.ee/ltGuillaume"><img title="Donate using Buy Me a Coffee" src="https://raw.githubusercontent.com/ltGuillaume/Resources/master/buybeer.svg"></a> <a href="https://liberapay.com/ltGuillaume/donate"><img title="Donate using Liberapay" src="https://raw.githubusercontent.com/ltGuillaume/Resources/master/liberapay.svg"></a>
-
-<img src="https://raw.githubusercontent.com/ltGuillaume/LibreWolf-WinUpdater/master/LibreWolf-WinUpdater.ico" align="right"/>
+<img src="LibreWolf-WinUpdater.ico" align="right">
 
 # LibreWolf WinUpdater
-
-[LibreWolf WinUpdater](https://github.com/ltGuillaume/LibreWolf-WinUpdater) by ltGuillaume  
-[LibreWolf](https://librewolf.net) by [ohfp](https://gitlab.com/ohfp), [stanzabird](https://stanzabird.nl), [fxbrit](https://gitlab.com/fxbrit), [maltejur](https://gitlab.com/maltejur), [bgstack15](https://bgstack15.wordpress.com) et al.
+by ltGuillaume: [Codeberg](https://codeberg.org/ltGuillaume) | [GitHub](https://github.com/ltGuillaume) | [Buy me a beer](https://buymeacoff.ee/ltGuillaume) 🍺
 
 An attempt to make updating LibreWolf for Windows much easier.
 
@@ -27,4 +23,5 @@ An attempt to make updating LibreWolf for Windows much easier.
 - The ini-file contains a `[Log]` section that shows the last update check result and the last update action.
 
 ## Credits
+* [LibreWolf](https://librewolf.net) by [ohfp](https://gitlab.com/ohfp), [stanzabird](https://stanzabird.nl), [fxbrit](https://gitlab.com/fxbrit), [maltejur](https://gitlab.com/maltejur), [bgstack15](https://bgstack15.wordpress.com) et al.
 * Original icon by the [LibreWolf Community](https://gitlab.com/librewolf-community/branding/-/tree/master/icon)
