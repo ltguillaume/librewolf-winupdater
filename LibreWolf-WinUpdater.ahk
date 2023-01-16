@@ -1,5 +1,5 @@
 ; LibreWolf WinUpdater - https://github.com/ltGuillaume/LibreWolf-WinUpdater
-;@Ahk2Exe-SetFileVersion 1.4.4
+;@Ahk2Exe-SetFileVersion 1.4.5
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf WinUpdater
@@ -24,7 +24,7 @@ _NoDefaultBrowser    = Could not open your default browser.
 _GetPathError        = Could not find the path to LibreWolf.`nBrowse to %ExeFile% in the following dialog.
 _SelectFileTitle     = %_Title% - Select %ExeFile%...
 _GetVersionError     = Could not determine the current version.
-_DownloadJsonError   = Could not download the releases file to check for a new version.
+_DownloadJsonError   = Could not download the releases file from GitLab to check for a new version.
 _FindUrlError        = Could not find the URL to download LibreWolf.
 _Downloading         = Downloading new version...
 _DownloadSetupError  = Could not download the setup file.
@@ -101,9 +101,13 @@ If !FileExist(Path) {
 }
 
 ; Get the current version
-FileGetVersion, CurrentVersion, %Path%
-StringLeft, CurrentVersion, CurrentVersion, InStr(CurrentVersion, ".",, -1) - 1
-If ErrorLevel
+; FileVersion() by SKAN https://www.autohotkey.com/boards/viewtopic.php?&t=4282
+CurrentVersion := False
+If Sz := DllCall("Version\GetFileVersionInfoSizeW", "WStr", Path, "Int", 0)
+If DllCall("Version\GetFileVersionInfoW", "WStr", Path, "Int", 0, "UInt", VarSetCapacity(V, Sz), "Str", V)
+If DllCall("Version\VerQueryValueW", "Str", V, "WStr", "\StringFileInfo\000004B0\ProductVersion", "PtrP", pInfo, "Int", 0)
+  CurrentVersion := StrGet(pInfo, "UTF-16")
+If !CurrentVersion
 	Die(_GetVersionError)
 
 ; Download release info
@@ -116,9 +120,6 @@ If !ReleaseInfo
 ; Compare versions
 RegExMatch(ReleaseInfo, "i)tag_name"":\s*""v?(.+?)""", Release)
 NewVersion := Release1
-StrReplace(NewVersion, ".",, DotCount)
-If DotCount < 2
-	NewVersion := NewVersion ".0"
 ;MsgBox, ReleaseInfo = %ReleaseInfo%`nCurrentVersion = %CurrentVersion%`nNewVersion = %NewVersion%
 IniRead, LastUpdateTo, %IniFile%, Log, LastUpdateTo, False
 If (NewVersion = CurrentVersion Or NewVersion = LastUpdateTo) {
@@ -233,8 +234,17 @@ Exit
 
 ; Clean up
 Exit:
-If RunningPortable
-	Run, %A_ScriptDir%\LibreWolf-Portable.exe
+If RunningPortable {
+	A_Args.RemoveAt(1)	; Remove "/Portable" from array
+	For i, Arg in A_Args
+	{
+		If (InStr(Arg, A_Space))
+			Arg := """" Arg """"
+		Args .= " " Arg
+	}
+;MsgBox, %Args%
+	Run, %A_ScriptDir%\LibreWolf-Portable.exe %Args%
+}
 FormatTime, CurrentTime
 IniWrite, %CurrentTime%, %IniFile%, Log, LastRun
 Sleep, 2000
