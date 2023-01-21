@@ -1,11 +1,11 @@
 ; LibreWolf WinUpdater - https://github.com/ltGuillaume/LibreWolf-WinUpdater
-;@Ahk2Exe-SetFileVersion 1.4.5
+;@Ahk2Exe-SetFileVersion 1.5.0
 
 ;@Ahk2Exe-Bin Unicode 64*
 ;@Ahk2Exe-SetDescription LibreWolf WinUpdater
 ;@Ahk2Exe-SetMainIcon LibreWolf-WinUpdater.ico
+;@Ahk2Exe-AddResource LibreWolf-WinUpdaterBlue.ico, 160
 ;@Ahk2Exe-SetOrigFilename LibreWolf-WinUpdater.exe
-;@Ahk2Exe-PostExec ResourceHacker.exe -open "%A_WorkFileName%" -save "%A_WorkFileName%" -action delete -mask ICONGROUP`,160`, ,,,,1
 ;@Ahk2Exe-PostExec ResourceHacker.exe -open "%A_WorkFileName%" -save "%A_WorkFileName%" -action delete -mask ICONGROUP`,206`, ,,,,1
 ;@Ahk2Exe-PostExec ResourceHacker.exe -open "%A_WorkFileName%" -save "%A_WorkFileName%" -action delete -mask ICONGROUP`,207`, ,,,,1
 ;@Ahk2Exe-PostExec ResourceHacker.exe -open "%A_WorkFileName%" -save "%A_WorkFileName%" -action delete -mask ICONGROUP`,208`, ,,,,1
@@ -21,6 +21,7 @@ Verbose         := A_Args[1] <> "/Scheduled"
 _Title               = LibreWolf WinUpdater
 _IsRunningError      = is already running.
 _NoDefaultBrowser    = Could not open your default browser.
+_Checking            = Checking for new version...
 _GetPathError        = Could not find the path to LibreWolf.`nBrowse to %ExeFile% in the following dialog.
 _SelectFileTitle     = %_Title% - Select %ExeFile%...
 _GetVersionError     = Could not determine the current version.
@@ -36,15 +37,16 @@ _NoChangesMade       = No changes were made.
 _Extracting          = Extracting portable version...
 _Installing          = Installing new version...
 _SilentUpdateError   = Silent update did not complete.`nDo you want to run the interactive installer?
-_NewVersionFound     = A new version is available.`nClose LibreWolf to start updating.
+_NewVersionFound     = A new version is available.`nClose LibreWolf to start updating...
 _NoNewVersion        = No new version found.
 _ExtractionError     = Could not extract the portable version's archive.
 _MoveToTargetError   = Could not move the following file into the target folder:
-_IsUpdated           = LibreWolf has just been updated.
+_IsUpdated           = LibreWolf has been updated.
 _To                  = to
 
 ; Preparation
 #NoEnv
+#SingleInstance, Off
 OnExit, Exit
 FileGetVersion, UpdaterVersion, %A_ScriptFullPath%
 UpdaterVersion := SubStr(UpdaterVersion, 1, -2)
@@ -54,6 +56,20 @@ Menu, Tray, Add, Portable, About
 Menu, Tray, Add, WinUpdater, About
 Menu, Tray, Add, Exit, Exit
 Menu, Tray, Default, WinUpdater
+
+; Set up GUI
+If Verbose {
+	Gui, New, -MinimizeBox -MaximizeBox, %_Title%
+	Gui, Color, 23222B
+	Gui, Add, Picture, x10 y10 w64 h64 Icon2, %A_ScriptFullPath%
+	Gui, Font, c00ACFF s22 w700, Segoe UI
+	Gui, Add, Text, x86 y4, LibreWolf
+	Gui, Font, cFFFFFF s9 w700
+	Gui, Add, Text, vVerField x86 y42 w222
+	Gui, Font, w400
+	Gui, Add, Progress, vProgress w222 h20 c00ACFF, 25
+	Gui, Add, Text, vLogField w222, %_Checking%
+}
 
 About(ItemName) {
 	Url = https://github.com/ltGuillaume/LibreWolf-%ItemName%
@@ -70,10 +86,8 @@ About(ItemName) {
 ; Check if another instance is running
 DetectHiddenWindows, On
 SetTitleMatchMode 2
-WinGet, Self, List, %A_ScriptName% ahk_exe %A_ScriptName%
-Loop, %Self%
-	If (Self%A_Index% != A_ScriptHwnd)
-		Die(_Title " " _IsRunningError)
+If ThisUpdaterRunning()
+	Die(_Title " " _IsRunningError)
 
 ; Get the path to LibreWolf
 If FileExist(A_ScriptDir "\LibreWolf-Portable.exe") {
@@ -87,13 +101,14 @@ If FileExist(A_ScriptDir "\LibreWolf-Portable.exe") {
 	If Errorlevel
 		Path = %A_ProgramFiles%\LibreWolf\%ExeFile%
 }
+Path := Trim(Path, """")
 
 CheckPath:
 If !FileExist(Path) {
 	MsgBox, 48, %_Title%, %_GetPathError%
 	FileSelectFile, Path, 3, %Path%, %_SelectFileTitle%, %ExeFile%
 	If ErrorLevel
-		Exit
+		ExitApp
 	Else {
 		IniWrite, %Path%, %IniFile%, Settings, Path
 		Goto, CheckPath
@@ -126,7 +141,13 @@ If (NewVersion = CurrentVersion Or NewVersion = LastUpdateTo) {
 	If !RunningPortable And Verbose
 		Notify(_NoNewVersion, CurrentVersion, 6000)
 	IniWrite, %_NoNewVersion%, %IniFile%, Log, LastResult
-	Exit
+	ExitApp
+}
+
+; Show GUI when not running as scheduled task
+If Verbose {
+	GuiControl,, VerField, %CurrentVersion% %_To% %NewVersion%
+	Gui, Show
 }
 
 ; Notify and wait if LibreWolf is running
@@ -230,10 +251,11 @@ IniWrite, %CurrentVersion%, %IniFile%, Log, LastUpdateFrom
 IniWrite, %NewVersion%, %IniFile%, Log, LastUpdateTo
 IniWrite, %_IsUpdated% %_From% v%CurrentVersion% %_To% v%NewVersion%, %IniFile%, Log, LastResult
 Notify(_IsUpdated, CurrentVersion " " _To " v" NewVersion, RunningPortable ? 0 : 60000)
-Exit
+ExitApp
 
 ; Clean up
 Exit:
+Gui, Destroy
 If RunningPortable {
 	A_Args.RemoveAt(1)	; Remove "/Portable" from array
 	For i, Arg in A_Args
@@ -247,21 +269,36 @@ If RunningPortable {
 }
 FormatTime, CurrentTime
 IniWrite, %CurrentTime%, %IniFile%, Log, LastRun
-Sleep, 2000
-If SetupFile
+If SetupFile {
+	Sleep, 2000
 	FileDelete, %SetupFile%
+}
 If IsPortable
 	FileRemoveDir, LibreWolf-Extracted, 1
 FileDelete, %A_ScriptFullPath%.pbak
+ExitApp
+
+ThisUpdaterRunning() {
+	Process, Exist	; Put launcher's process id into ErrorLevel
+	Query := "Select ProcessId from Win32_Process where ProcessId!=" ErrorLevel " and ExecutablePath=""" StrReplace(A_ScriptFullPath, "\", "\\") """"
+	For Process in ComObjGet("winmgmts:").ExecQuery(Query)
+		Return True
+}
 
 Notify(Msg, Ver = 0, Delay = 0) {
-	Global NewVersion
+	Global NewVersion, Verbose
 	If !Ver
 		Ver := NewVersion
 	Menu, Tray, Tip, %Msg%
-	TrayTip, %Msg%, v%Ver%,, 16
-	If Delay
+	If Verbose {
+		GuiControl,, LogField, % SubStr(Msg, InStr(Msg, "`n") + 1)
+		GuiControl,, Progress, +25
+	}
+	If (!Verbose Or Delay) {
+		Gui, Destroy
+		TrayTip, %Msg%, v%Ver%,, 16
 		Sleep, %Delay%
+	}
 }
 
 Download(URL) {
@@ -368,5 +405,9 @@ Die(Error) {
 	IniWrite, %Error%, %IniFile%, Log, LastResult
 	If Verbose
 		MsgBox, 48, %_Title%, % Error "`n" (ChangesMade ? _ChangesMade : _NoChangesMade)
-	Exit
+	ExitApp
+}
+
+GuiClose() {
+	ExitApp
 }
