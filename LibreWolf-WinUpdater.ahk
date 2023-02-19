@@ -1,4 +1,4 @@
-; LibreWolf WinUpdater - https://github.com/ltGuillaume/LibreWolf-WinUpdater
+; LibreWolf WinUpdater - https://codeberg.org/ltGuillaume/LibreWolf-WinUpdater
 ;@Ahk2Exe-SetFileVersion 1.5.1
 
 ;@Ahk2Exe-Bin Unicode 64*
@@ -72,7 +72,7 @@ If Verbose {
 }
 
 About(ItemName) {
-	Url = https://github.com/ltGuillaume/LibreWolf-%ItemName%
+	Url = https://codeberg.org/ltGuillaume/LibreWolf-%ItemName%
 	Try Run, %Url%
 	Catch {
 		RegRead, DefBrowser, HKCR, .html
