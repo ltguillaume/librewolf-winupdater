@@ -22,7 +22,7 @@ Global Args       := ""
 , RunningPortable := A_Args[1] = "/Portable"
 , Verbose         := A_Args[1] <> "/Scheduled"
 , ChangesMade     := False
-, Path, ProgramW6432, Build, UpdateSelf, Task, ReleaseInfo, CurrentVersion, NewVersion, SetupFile, LogField, Progress, VerField
+, Path, ProgramW6432, Build, UpdateSelf, Task, CurrentUpdaterVersion, ReleaseInfo, CurrentVersion, NewVersion, SetupFile, LogField, Progress, VerField
 
 ; Strings
 Global _LibreWolf     := "LibreWolf"
