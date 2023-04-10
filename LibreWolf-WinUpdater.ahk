@@ -27,6 +27,7 @@ Global Args       := ""
 ; Strings
 Global _LibreWolf     := "LibreWolf"
 , _Updater            := "LibreWolf WinUpdater"
+, _NoConnection       := "Could not establish a connection to GitLab."
 , _IsRunningError     := _Updater " is already running."
 , _NoDefaultBrowser   := "Could not open your default browser."
 , _Checking           := "Checking for new version..."
@@ -60,7 +61,7 @@ Init()
 CheckPaths()
 CheckArgs()
 If (ThisUpdaterRunning())
-	Die(_IsRunningError)
+	Die(_IsRunningError, False)	; Don't show this if not Verbose
 If (UpdateSelf And A_IsCompiled)
 	SelfUpdate()
 GetCurrentVersion()
@@ -69,6 +70,9 @@ If (GetNewVersion())
 Exit()
 
 Init() {
+	If (!Download("https://gitlab.com/manifest.json"))
+		Die(_NoConnection, False)	; Don't show this if not Verbose
+
 	EnvGet, ProgramW6432, ProgramW6432
 	IniRead, UpdateSelf, %IniFile%, Settings, UpdateSelf, 1	; Using "False" in .ini causes If (UpdateSelf) to be True
 	FileGetVersion, CurrentUpdaterVersion, %A_ScriptFullPath%
@@ -367,10 +371,10 @@ Exit() {
 
 ; Helper functions
 
-Die(Error) {
+Die(Error, Show = True) {
 	Error := StrReplace(Error, "{Task}", Task)
 	IniWrite, %Error%, %IniFile%, Log, LastResult
-	If (Verbose) {
+	If (Show Or Verbose) {
 		MsgBox, 49, %_Updater% %CurrentUpdaterVersion%, % Error "`n" (ChangesMade ? _ChangesMade : _NoChangesMade) "`n`n" _GoToWebsite
 		IfMsgBox OK
 			About("winupdater")
