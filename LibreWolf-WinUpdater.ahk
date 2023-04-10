@@ -2,6 +2,7 @@
 ;@Ahk2Exe-SetFileVersion 1.6.0
 
 ;@Ahk2Exe-Base Unicode 32*
+;@Ahk2Exe-SetCompanyName LibreWolf Community
 ;@Ahk2Exe-SetDescription LibreWolf WinUpdater
 ;@Ahk2Exe-SetMainIcon LibreWolf-WinUpdater.ico
 ;@Ahk2Exe-AddResource LibreWolf-WinUpdaterBlue.ico, 160
