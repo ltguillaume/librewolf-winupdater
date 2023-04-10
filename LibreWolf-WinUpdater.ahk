@@ -1,8 +1,7 @@
 ; LibreWolf WinUpdater - https://codeberg.org/ltguillaume/librewolf-winupdater
 ;@Ahk2Exe-SetFileVersion 1.6.0
 
-;@Ahk2Exe-Base Unicode 32*,LibreWolf-WinUpdater-i686
-;@Ahk2Exe-Base Unicode 64*,LibreWolf-WinUpdater-x86_64
+;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetDescription LibreWolf WinUpdater
 ;@Ahk2Exe-SetMainIcon LibreWolf-WinUpdater.ico
 ;@Ahk2Exe-AddResource LibreWolf-WinUpdaterBlue.ico, 160
@@ -15,7 +14,6 @@
 #SingleInstance, Off
 
 Global Args       := ""
-, Architecture    := A_PtrSize = 8 ? "x86_64" : "i686"
 , IniFile         := A_ScriptDir "\LibreWolf-WinUpdater.ini"
 , LibreWolfExe    := "librewolf.exe"
 , SelfUpdateZip   := "LibreWolf-WinUpdater.zip"
@@ -24,7 +22,7 @@ Global Args       := ""
 , RunningPortable := A_Args[1] = "/Portable"
 , Verbose         := A_Args[1] <> "/Scheduled"
 , ChangesMade     := False
-, Path, UpdateSelf, Task, ReleaseInfo, CurrentVersion, NewVersion, SetupFile, LogField, Progress, VerField
+, Path, ProgramW6432, Build, UpdateSelf, Task, ReleaseInfo, CurrentVersion, NewVersion, SetupFile, LogField, Progress, VerField
 
 ; Strings
 Global _LibreWolf     := "LibreWolf"
@@ -34,6 +32,7 @@ Global _LibreWolf     := "LibreWolf"
 , _Checking           := "Checking for new version..."
 , _GetPathError       := "Could not find the path to LibreWolf.`nBrowse to " LibreWolfExe " in the following dialog."
 , _SelectFileTitle    := _Updater " - Select " LibreWolfExe "..."
+, _GetBuildError      := "Could not determine the build architecture (32/64-bit) of LibreWolf."
 , _GetVersionError    := "Could not determine the current version of LibreWolf."
 , _DownloadJsonError  := "Could not download the releases file for {Task}."
 , _JsonVersionError   := "Could not get version info from the releases file for {Task}."
@@ -70,11 +69,12 @@ If (GetNewVersion())
 Exit()
 
 Init() {
+	EnvGet, ProgramW6432, ProgramW6432
 	IniRead, UpdateSelf, %IniFile%, Settings, UpdateSelf, 1	; Using "False" in .ini causes If (UpdateSelf) to be True
 	FileGetVersion, CurrentUpdaterVersion, %A_ScriptFullPath%
 	CurrentUpdaterVersion := SubStr(CurrentUpdaterVersion, 1, -2)
 	SetWorkingDir, %A_Temp%
-	Menu, Tray, Tip, %_Updater% %CurrentUpdaterVersion% (%Architecture%)
+	Menu, Tray, Tip, %_Updater% %CurrentUpdaterVersion%
 	Menu, Tray, NoStandard
 	Menu, Tray, Add, Portable, About
 	Menu, Tray, Add, WinUpdater, About
@@ -83,7 +83,7 @@ Init() {
 
 	; Set up GUI
 	If (Verbose) {
-		Gui, New, -MinimizeBox -MaximizeBox, %_Updater% %CurrentUpdaterVersion% (%Architecture%)
+		Gui, New, -MinimizeBox -MaximizeBox, %_Updater% %CurrentUpdaterVersion%
 		Gui, Color, 23222B
 		Gui, Add, Picture, x10 y10 w64 h64 Icon2, %A_ScriptFullPath%
 		Gui, Font, c00ACFF s22 w700, Segoe UI
@@ -116,10 +116,13 @@ CheckPaths() {
 		IniRead, Path, %IniFile%, Settings, Path, 0	; Need to use 0, because False would become a string
 		If (!Path)
 			RegRead, Path, HKLM\SOFTWARE\Clients\StartMenuInternet\LibreWolf\shell\open\command
-		If (Errorlevel)
+		If (ErrorLevel)
+			Path = %ProgramW6432%\LibreWolf\%LibreWolfExe%
+
+		Path := Trim(Path, """")	; FileExists chokes on double quotes
+		If (!FileExist(Path))
 			Path = %A_ProgramFiles%\LibreWolf\%LibreWolfExe%
 	}
-	Path := Trim(Path, """")
 ;MsgBox, Path = %Path%
 
 	CheckPath:
@@ -156,7 +159,7 @@ SelfUpdate() {
 	If (GetLatestVersion() = CurrentUpdaterVersion)
 		Return
 
-	RegExMatch(ReleaseInfo, "i)name"":"".+?-" Architecture "\.zip"".*?browser_download_url"":""(.*?)""", DownloadUrl)
+	RegExMatch(ReleaseInfo, "i)name"":""librewolf-winupdater.+?\.zip"".*?browser_download_url"":""(.*?)""", DownloadUrl)
 	If (!DownloadUrl1)
 		Return Log("SelfUpdate", _FindUrlError, True)
 
@@ -179,6 +182,15 @@ SelfUpdate() {
 }
 
 GetCurrentVersion() {
+	; by SKAN and Drugwash https://www.autohotkey.com/board/topic/70777-how-to-get-autohotkeyexe-build-information-from-file/?p=448263
+	Call := DllCall("GetBinaryTypeW", "Str", "\\?\" Path, "UInt *", Build)
+	If (Call And Build = 6)
+		Build := "x86_64"
+	Else If (Call And Build = 0)
+		Build := "i686"
+	Else
+		Die(_GetBuildError)
+
 	; FileVersion() by SKAN https://www.autohotkey.com/boards/viewtopic.php?&t=4282
 	If (Sz := DllCall("Version\GetFileVersionInfoSizeW", "WStr", Path, "Int", 0))
 		If (DllCall("Version\GetFileVersionInfoW", "WStr", Path, "Int", 0, "UInt", VarSetCapacity(V, Sz), "Str", V))
@@ -206,7 +218,7 @@ GetNewVersion() {
 StartUpdate() {
 	; Show GUI when not running as a scheduled task
 	If (Verbose) {
-		GuiControl,, VerField, %CurrentVersion% %_To% %NewVersion%
+		GuiControl,, VerField, %CurrentVersion% %_To% %NewVersion% (%Build%)
 		Gui, Show
 	}
 
@@ -234,7 +246,7 @@ WaitForClose() {
 
 DownloadUpdate() {
 	; Get setup file URL
-	FilenameEnd := Architecture (IsPortable ? "-portable.{0,2}\.zip" : "-setup.{0,2}\.exe")	; .{0,2} = for the temporarily added character to prevent old WinUpdater version from downloading the i686 release
+	FilenameEnd := Build (IsPortable ? "-portable.{0,2}\.zip" : "-setup.{0,2}\.exe")	; .{0,2} = for the temporarily added character to prevent old WinUpdater version from downloading the i686 release
 	RegExMatch(ReleaseInfo, "i)""name"":""(librewolf-.{1,30}?" FilenameEnd ")"",\s*""url"":""(.+?)""", DownloadUrl)
 	;MsgBox, Downloading`n%DownloadUrl2%`nto`n%DownloadUrl1%
 	If (!DownloadUrl1 Or !DownloadUrl2)
@@ -293,7 +305,7 @@ ExtractPortable() {
 			If (!FileExist(A_ScriptDir "\" A_LoopFilePath) Or A_LoopFileSize <> CurrentFileSize Or Hash(A_LoopFilePath) <> Hash(A_ScriptDir "\" A_LoopFilePath)) {
 ;MsgBox, Moving %A_LoopFilePath%
 				FileMove, %A_LoopFilePath%, %A_ScriptDir%\%A_LoopFilePath%, 1
-				If (Errorlevel)
+				If (ErrorLevel)
 					Die(_MoveToTargetError "`n" A_LoopFilePath)
 				ChangesMade := True
 			}
@@ -323,7 +335,7 @@ Install() {
 
 WriteReport() {
 	; Report update if completed
-	Log("LastUpdate",, True)
+	Log("LastUpdate", "(" Build ")", True)
 	Log("LastUpdateFrom", CurrentVersion)
 	Log("LastUpdateTo", NewVersion)
 	Log("LastResult", _IsUpdated)
