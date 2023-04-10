@@ -28,13 +28,13 @@ Global Args       := ""
 
 ; Strings
 Global _LibreWolf     := "LibreWolf"
-, _Updater              := "LibreWolf WinUpdater"
+, _Updater            := "LibreWolf WinUpdater"
 , _IsRunningError     := _Updater " is already running."
 , _NoDefaultBrowser   := "Could not open your default browser."
 , _Checking           := "Checking for new version..."
 , _GetPathError       := "Could not find the path to LibreWolf.`nBrowse to " LibreWolfExe " in the following dialog."
 , _SelectFileTitle    := _Updater " - Select " LibreWolfExe "..."
-, _GetVersionError    := "Could not determine the current version."
+, _GetVersionError    := "Could not determine the current version of LibreWolf."
 , _DownloadJsonError  := "Could not download the releases file for {Task}."
 , _JsonVersionError   := "Could not get version info from the releases file for {Task}."
 , _FindUrlError       := "Could not find the URL to download {Task}."
@@ -45,7 +45,7 @@ Global _LibreWolf     := "LibreWolf"
 , _FindChecksumError  := "Could not find the checksum for the downloaded file."
 , _ChecksumMatchError := "The file checksum did not match, so it's possible the download failed."
 , _ChangesMade        := "However, new files were written to the target folder!"
-, _NoChangesMade      := "No changes were made."
+, _NoChangesMade      := "No changes were made to your LibreWolf folder."
 , _Extracting         := "Extracting portable version..."
 , _Installing         := "Installing new version..."
 , _SilentUpdateError  := "Silent update did not complete.`nDo you want to run the interactive installer?"
@@ -55,24 +55,22 @@ Global _LibreWolf     := "LibreWolf"
 , _MoveToTargetError  := "Could not move the following file into the target folder:"
 , _IsUpdated          := "LibreWolf has been updated."
 , _To                 := "to"
+, _GoToWebsite        := "Click OK to check the website for a newer version or to get help by opening an issue."
 
 Init()
 CheckPaths()
 CheckArgs()
 If (ThisUpdaterRunning())
 	Die(_IsRunningError)
-If (UpdateSelf And A_IsCompiled) {
-	Task := _Updater
+If (UpdateSelf And A_IsCompiled)
 	SelfUpdate()
-	Task := _LibreWolf
-}
 GetCurrentVersion()
-If (NewVersionFound())
+If (GetNewVersion())
 	StartUpdate()
 Exit()
 
 Init() {
-	IniRead, UpdateSelf, %IniFile%, Settings, UpdateSelf, True
+	IniRead, UpdateSelf, %IniFile%, Settings, UpdateSelf, 1	; Using "False" in .ini causes If (UpdateSelf) to be True
 	FileGetVersion, CurrentUpdaterVersion, %A_ScriptFullPath%
 	CurrentUpdaterVersion := SubStr(CurrentUpdaterVersion, 1, -2)
 	SetWorkingDir, %A_Temp%
@@ -154,7 +152,8 @@ ThisUpdaterRunning() {
 }
 
 SelfUpdate() {
-	If (GetLatestVersion("WinUpdater") = CurrentUpdaterVersion)
+	Task := _Updater
+	If (GetLatestVersion() = CurrentUpdaterVersion)
 		Return
 
 	RegExMatch(ReleaseInfo, "i)name"":"".+?-" Architecture "\.zip"".*?browser_download_url"":""(.*?)""", DownloadUrl)
@@ -169,24 +168,14 @@ SelfUpdate() {
 	If (!Extract(A_Temp "\" SelfUpdateZip, A_ScriptDir))
 		Return Log("SelfUpdate", _ExtractionError, True)
 
+	If (IsPortable)
+		FileDelete, A_ScriptDir "\ScheduledTask*.ps1"
+
+	If (!FileExist(A_ScriptFullPath))
+		Die(_ExtractionError)
+
 	Run, %A_ScriptFullPath% %Args%
 	Exit()
-}
-
-GetLatestVersion(Program) {
-	ReleaseUrl := (Program = "WinUpdater"
-		? "https://codeberg.org/api/v1/repos/ltguillaume/librewolf-winupdater/releases?&limit=1"
-		: "https://gitlab.com/api/v4/projects/13852981/releases/permalink/latest")
-	ReleaseInfo := Download(ReleaseUrl)
-	If (!ReleaseInfo)
-		Die(_DownloadJsonError)
-
-	RegExMatch(ReleaseInfo, "i)tag_name"":""v?(.+?)""", Release)
-	LatestVersion := Release1
-	If (!LatestVersion)
-		Die(_JsonVersionError)
-
-	Return LatestVersion
 }
 
 GetCurrentVersion() {
@@ -200,8 +189,9 @@ GetCurrentVersion() {
 		Die(_GetVersionError)
 }
 
-NewVersionFound() {
-	NewVersion := GetLatestVersion("LibreWolf")
+GetNewVersion() {
+	Task := _LibreWolf
+	NewVersion := GetLatestVersion()
 ;MsgBox, ReleaseInfo = %ReleaseInfo%`nCurrentVersion = %CurrentVersion%`nNewVersion = %NewVersion%
 	IniRead, LastUpdateTo, %IniFile%, Log, LastUpdateTo, False
 	If (NewVersion = CurrentVersion Or NewVersion = LastUpdateTo) {
@@ -236,7 +226,7 @@ WaitForClose() {
 	}
 
 	; Check for newer version since notification was shown
-	If (NewVersionFound() And Notified)
+	If (GetNewVersion() And Notified)
 		WaitForClose()
 
 	DownloadUpdate()
@@ -268,7 +258,7 @@ VerifyChecksum() {
 	Checksum := Download(ChecksumUrl1)
 
 	; Get checksum for downloaded file
-	RegExMatch(Checksum, "i)(\S+?)\s+\Q" SetupFile "\E", Checksum)
+	RegExMatch(Checksum, "i)(\S+?)\s+\*?\Q" SetupFile "\E", Checksum)
 	If (!Checksum1)
 		Die(_FindChecksumError)
 
@@ -368,8 +358,11 @@ Exit() {
 Die(Error) {
 	Error := StrReplace(Error, "{Task}", Task)
 	IniWrite, %Error%, %IniFile%, Log, LastResult
-	If (Verbose)
-		MsgBox, 48, %_Updater%, % Error "`n" (ChangesMade ? _ChangesMade : _NoChangesMade)
+	If (Verbose) {
+		MsgBox, 49, %_Updater% %CurrentUpdaterVersion%, % Error "`n" (ChangesMade ? _ChangesMade : _NoChangesMade) "`n`n" _GoToWebsite
+		IfMsgBox OK
+			About("winupdater")
+	}
 	Exit()
 }
 
@@ -393,6 +386,7 @@ Extract(From, To) {
 	If (ErrorLevel) {	; PowerShell fallback
 ;MsgBox, Trying PowerShell fallback
 		FileRemoveDir, %ExtractDir%, 1
+		FileCreateDir, %ExtractDir%
 		SetWorkingDir, %To%
 		RunWait, powershell.exe -NoProfile -Command "Expand-Archive """%From%""" . -Force" -ErrorAction Stop,, Hide
 		Error := ErrorLevel
@@ -400,6 +394,22 @@ Extract(From, To) {
 	}
 
 	Return !(Error <> 0)
+}
+
+GetLatestVersion() {
+	ReleaseUrl := (Task = _Updater
+		? "https://codeberg.org/api/v1/repos/ltguillaume/librewolf-winupdater/releases?&limit=1"
+		: "https://gitlab.com/api/v4/projects/13852981/releases/permalink/latest")
+	ReleaseInfo := Download(ReleaseUrl)
+	If (!ReleaseInfo)
+		Die(_DownloadJsonError)
+
+	RegExMatch(ReleaseInfo, "i)tag_name"":""v?(.+?)""", Release)
+	LatestVersion := Release1
+	If (!LatestVersion)
+		Die(_JsonVersionError)
+
+	Return LatestVersion
 }
 
 GuiClose() {
