@@ -1,5 +1,5 @@
 ; LibreWolf WinUpdater - https://codeberg.org/ltguillaume/librewolf-winupdater
-;@Ahk2Exe-SetFileVersion 1.6.1
+;@Ahk2Exe-SetFileVersion 1.6.2
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -161,6 +161,7 @@ ThisUpdaterRunning() {
 
 SelfUpdate() {
 	Task := _Updater
+;MsgBox, % GetLatestVersion() " = " CurrentUpdaterVersion
 	If (GetLatestVersion() = CurrentUpdaterVersion)
 		Return
 
@@ -177,7 +178,7 @@ SelfUpdate() {
 		Return Log("SelfUpdate", _ExtractionError, True)
 
 	If (IsPortable)
-		FileDelete, A_ScriptDir "\ScheduledTask*.ps1"
+		FileDelete, %A_ScriptDir%\ScheduledTask*.ps1
 
 	If (!FileExist(A_ScriptFullPath))
 		Die(_ExtractionError)
@@ -397,10 +398,11 @@ Download(URL) {
 }
 
 Extract(From, To) {
-;MsgBox, %A_WorkingDir%\%From% to %A_WorkingDir%\%To%
+;MsgBox, %From% to %To%
 	FileRemoveDir, %ExtractDir%, 1
 	FileCopyDir, %From%, %To%, 1
-	If (ErrorLevel) {	; PowerShell fallback
+	Error := ErrorLevel
+	If (Error) {	; PowerShell fallback
 ;MsgBox, Trying PowerShell fallback
 		FileRemoveDir, %ExtractDir%, 1
 		FileCreateDir, %ExtractDir%
@@ -409,6 +411,7 @@ Extract(From, To) {
 		Error := ErrorLevel
 		SetWorkingDir, %A_Temp%
 	}
+;MsgBox, Extract(%From%, %To%) ErrorLevel = %Error%
 
 	Return !(Error <> 0)
 }
