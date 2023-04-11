@@ -1,5 +1,5 @@
 ; LibreWolf WinUpdater - https://codeberg.org/ltguillaume/librewolf-winupdater
-;@Ahk2Exe-SetFileVersion 1.6.0
+;@Ahk2Exe-SetFileVersion 1.6.1
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -251,7 +251,7 @@ WaitForClose() {
 
 DownloadUpdate() {
 	; Get setup file URL
-	FilenameEnd := Build (IsPortable ? "-portable.{0,2}\.zip" : "-setup.{0,2}\.exe")	; .{0,2} = for the temporarily added character to prevent old WinUpdater version from downloading the i686 release
+	FilenameEnd := Build (IsPortable ? "-portable\.zip" : "-setup\.exe")
 	RegExMatch(ReleaseInfo, "i)""name"":""(librewolf-.{1,30}?" FilenameEnd ")"",\s*""url"":""(.+?)""", DownloadUrl)
 	;MsgBox, Downloading`n%DownloadUrl2%`nto`n%DownloadUrl1%
 	If (!DownloadUrl1 Or !DownloadUrl2)
@@ -416,7 +416,7 @@ Extract(From, To) {
 GetLatestVersion() {
 	ReleaseUrl := (Task = _Updater
 		? "https://codeberg.org/api/v1/repos/ltguillaume/librewolf-winupdater/releases?&limit=1"
-		: "https://gitlab.com/api/v4/projects/13852981/releases/permalink/latest")
+		: "https://gitlab.com/api/v4/projects/44042130/releases/permalink/latest")
 	ReleaseInfo := Download(ReleaseUrl)
 	If (!ReleaseInfo)
 		Die(_DownloadJsonError)

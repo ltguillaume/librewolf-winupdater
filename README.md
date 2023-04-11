@@ -8,7 +8,7 @@ An attempt to make updating LibreWolf for Windows much easier.
 ![LibreWolf WinUpdater](SCREENSHOT.png)
 
 ## Getting started
-- If you want to run the portable version of LibreWolf, download and extract [`librewolf-xx.x.en-US.win64.portable.zip`](https://gitlab.com/librewolf-community/browser/windows/-/releases). It already contains a compiled version of the project hosted here.  
+- If you want to run the portable version of LibreWolf, download and extract [`librewolf-xx.x.en-US.win64.portable.zip`](https://gitlab.com/librewolf-community/browser/bsys6/-/releases). It already contains a compiled version of the project hosted here.  
   WinUpdater will automatically update LibreWolf whenever you run `LibreWolf-Portable.exe` (checking for a new version once a day).  
 - If you have installed LibreWolf, then download and extract the latest [`LibreWolf-WinUpdater_x.x.x.zip`](https://codeberg.org/ltGuillaume/LibreWolf-WinUpdater/releases) to a folder you like, e.g. `%AppData%\LibreWolf`. Run `LibreWolf-WinUpdater.exe` to check for an update. If one is available, it will be downloaded and installed immediately.  
   If LibreWolf is running, the updater will notify you of the new version and start the update as soon as you close the browser. The last result can be found in `LibreWolf-WinUpdater.ini`.  
