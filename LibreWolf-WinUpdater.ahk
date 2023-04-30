@@ -323,10 +323,12 @@ ExtractPortable() {
 }
 
 Install() {
-	; Run silent setup
 	Progress(_Installing)
+	If (!Verbose)
+		Notify(_Installing, CurrentVersion " " _To " v" NewVersion, 3000)
 	Folder := StrReplace(Path, LibreWolfExe, "")
 ;MsgBox, %SetupFile% /S /D=%Folder%
+	; Run silent setup
 	RunWait, %SetupFile% /S /D=%Folder%,, UseErrorLevel
 	If (ErrorLevel) {
 		MsgBox, 52, %_Updater%, %_SilentUpdateError%
@@ -418,7 +420,7 @@ Extract(From, To) {
 
 GetLatestVersion() {
 	ReleaseUrl := (Task = _Updater
-		? "https://codeberg.org/api/v1/repos/ltguillaume/librewolf-winupdater/releases?&limit=1"
+		? "https://codeberg.org/api/v1/repos/ltguillaume/librewolf-winupdater/releases/latest"
 		: "https://gitlab.com/api/v4/projects/44042130/releases/permalink/latest")
 	ReleaseInfo := Download(ReleaseUrl)
 	If (!ReleaseInfo)
