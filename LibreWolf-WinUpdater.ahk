@@ -56,7 +56,7 @@ Global _LibreWolf     := "LibreWolf"
 , _MoveToTargetError  := "Could not move the following file into the target folder:"
 , _IsUpdated          := "LibreWolf has been updated."
 , _To                 := "to"
-, _GoToWebsite        := "Click OK to check the website for a newer version or to get help by opening an issue."
+, _GoToWebsite        := "Click Yes to check for solutions on the website or to open an issue. Click No to exit."
 
 Init()
 CheckPaths()
@@ -380,8 +380,8 @@ Die(Error, Show = True) {
 	Error := StrReplace(Error, "{Task}", Task)
 	IniWrite, %Error%, %IniFile%, Log, LastResult
 	If (Show Or Verbose) {
-		MsgBox, 49, %_Updater% %CurrentUpdaterVersion%, % Error "`n" (ChangesMade ? _ChangesMade : _NoChangesMade) "`n`n" _GoToWebsite
-		IfMsgBox OK
+		MsgBox, 52, %_Updater% %CurrentUpdaterVersion%, % Error "`n" (ChangesMade ? _ChangesMade : _NoChangesMade) "`n`n" _GoToWebsite
+		IfMsgBox Yes
 			About("winupdater")
 	}
 	Exit()
