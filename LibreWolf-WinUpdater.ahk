@@ -1,5 +1,5 @@
 ; LibreWolf WinUpdater - https://codeberg.org/ltguillaume/librewolf-winupdater
-;@Ahk2Exe-SetFileVersion 1.6.3
+;@Ahk2Exe-SetFileVersion 1.6.4
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -52,7 +52,7 @@ Global _LibreWolf     := "LibreWolf"
 , _SilentUpdateError  := "Silent update did not complete.`nDo you want to run the interactive installer?"
 , _NewVersionFound    := "A new version is available.`nClose LibreWolf to start updating..."
 , _NoNewVersion       := "No new version found."
-, _ExtractionError    := "Could not extract the {Task} archive."
+, _ExtractionError    := "Could not extract the {Task} archive.`nMake sure LibreWolf is not running and restart the updater."
 , _MoveToTargetError  := "Could not move the following file into the target folder:"
 , _IsUpdated          := "LibreWolf has been updated."
 , _To                 := "to"
@@ -144,6 +144,7 @@ CheckPaths() {
 }
 
 CheckArgs() {
+	Args := ""
 	For i, Arg in A_Args
 	{
 		If (InStr(Arg, A_Space))
@@ -184,7 +185,7 @@ SelfUpdate() {
 		Die(_ExtractionError)
 
 	Run, %A_ScriptFullPath% %Args%
-	Exit()
+	ExitApp
 }
 
 GetCurrentVersion() {
