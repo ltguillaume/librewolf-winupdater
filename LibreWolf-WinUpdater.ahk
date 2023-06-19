@@ -16,6 +16,8 @@
 
 Global Args       := ""
 , IniFile         := A_ScriptDir "\LibreWolf-WinUpdater.ini"
+, TaskCreateFile  := "ScheduledTask-Create.ps1"
+, TaskRemoveFile  := "ScheduledTask-Remove.ps1"
 , LibreWolfExe    := "librewolf.exe"
 , SelfUpdateZip   := "LibreWolf-WinUpdater.zip"
 , ExtractDir      := A_Temp "\LibreWolf-Extracted"
@@ -34,10 +36,12 @@ Global _LibreWolf     := "LibreWolf"
 , _Checking           := "Checking for new version..."
 , _GetPathError       := "Could not find the path to LibreWolf.`nBrowse to " LibreWolfExe " in the following dialog."
 , _SelectFileTitle    := _Updater " - Select " LibreWolfExe "..."
+, _WritePermError     := "Could not write to`n{}. Please check the current user account's write permissions for this folder."
+, _CopyError          := "Could not copy file {}"
 , _GetBuildError      := "Could not determine the build architecture (32/64-bit) of LibreWolf."
-, _GetVersionError    := "Could not determine the current version of LibreWolf."
-, _DownloadJsonError  := "Could not download the releases file for {Task}."
-, _JsonVersionError   := "Could not get version info from the releases file for {Task}."
+, _GetVersionError    := "Could not determine the current version of`n{}"
+, _DownloadJsonError  := "Could not download the {Task} releases file."
+, _JsonVersionError   := "Could not get version info from the {Task} releases file."
 , _FindUrlError       := "Could not find the URL to download {Task}."
 , _Downloading        := "Downloading new version..."
 , _DownloadSelfError  := "Could not download the new WinUpdater version."
@@ -53,7 +57,7 @@ Global _LibreWolf     := "LibreWolf"
 , _NewVersionFound    := "A new version is available.`nClose LibreWolf to start updating..."
 , _NoNewVersion       := "No new version found."
 , _ExtractionError    := "Could not extract the {Task} archive.`nMake sure LibreWolf is not running and restart the updater."
-, _MoveToTargetError  := "Could not move the following file into the target folder:"
+, _MoveToTargetError  := "Could not move the following file into the target folder:`n{}"
 , _IsUpdated          := "LibreWolf has been updated."
 , _To                 := "to"
 , _GoToWebsite        := "Click OK to check for solutions on the website or to open an issue. Click Cancel to exit."
@@ -62,7 +66,8 @@ Init()
 CheckPaths()
 CheckArgs()
 If (ThisUpdaterRunning())
-	Die(_IsRunningError, False)	; Don't show this if not Verbose
+	Die(_IsRunningError,, False)	; Don't show this if not Verbose
+CheckWriteAccess()
 If (UpdateSelf And A_IsCompiled)
 	SelfUpdate()
 GetCurrentVersion()
@@ -72,7 +77,7 @@ Exit()
 
 Init() {
 	If (!Download("https://gitlab.com/manifest.json"))
-		Die(_NoConnection, False)	; Don't show this if not Verbose
+		Die(_NoConnection,, False)	; Don't show this if not Verbose
 
 	EnvGet, ProgramW6432, ProgramW6432
 	IniRead, UpdateSelf, %IniFile%, Settings, UpdateSelf, 1	; Using "False" in .ini causes If (UpdateSelf) to be True
@@ -124,7 +129,7 @@ CheckPaths() {
 		If (ErrorLevel)
 			Path = %ProgramW6432%\LibreWolf\%LibreWolfExe%
 
-		Path := Trim(Path, """")	; FileExists chokes on double quotes
+		Path := Trim(Path, """")	; FileExist chokes on double quotes
 		If (!FileExist(Path))
 			Path = %A_ProgramFiles%\LibreWolf\%LibreWolfExe%
 	}
@@ -188,6 +193,31 @@ SelfUpdate() {
 	ExitApp
 }
 
+CheckWriteAccess() {
+	FileAppend,, %IniFile%
+	If (!ErrorLevel)
+		Return
+
+	If (IsPortable)
+		Die(_WritePermError, A_ScriptDir)
+
+	AppData := A_AppData "\LibreWolf\WinUpdater"
+	FileCreateDir, %AppData%
+	If (ErrorLevel)
+		Die(_WritePermError, A_ScriptDir)
+
+	Files := [ A_ScriptName, TaskCreateFile, TaskRemoveFile ]
+	For Index, File in Files {
+		If (!FileExist(AppData "\" File))
+			FileCopy, %A_ScriptDir%\%File%, %AppData%
+		If (ErrorLevel)
+			Die(_CopyError, File " " _To "`n" AppData)
+	}
+
+	Run, %AppData%\%A_ScriptName% %Args%
+	ExitApp
+}
+
 GetCurrentVersion() {
 	; by SKAN and Drugwash https://www.autohotkey.com/board/topic/70777-how-to-get-autohotkeyexe-build-information-from-file/?p=448263
 	Call := DllCall("GetBinaryTypeW", "Str", "\\?\" Path, "UInt *", Build)
@@ -205,7 +235,7 @@ GetCurrentVersion() {
 				CurrentVersion := StrGet(pInfo, "UTF-16")
 
 	If (!CurrentVersion)
-		Die(_GetVersionError)
+		Die(_GetVersionError, Path)
 }
 
 GetNewVersion() {
@@ -313,7 +343,7 @@ ExtractPortable() {
 ;MsgBox, Moving %A_LoopFilePath%
 				FileMove, %A_LoopFilePath%, %A_ScriptDir%\%A_LoopFilePath%, 1
 				If (ErrorLevel)
-					Die(_MoveToTargetError "`n" A_LoopFilePath)
+					Die(_MoveToTargetError, A_LoopFilePath)
 				ChangesMade := True
 			}
 		}
@@ -376,7 +406,9 @@ Exit() {
 
 ; Helper functions
 
-Die(Error, Show = True) {
+Die(Error, Var = False, Show = True) {
+	If (Var)
+		Error := StrReplace(Error, "{}", Var)
 	Error := StrReplace(Error, "{Task}", Task)
 	IniWrite, %Error%, %IniFile%, Log, LastResult
 	If (Show Or Verbose) {
