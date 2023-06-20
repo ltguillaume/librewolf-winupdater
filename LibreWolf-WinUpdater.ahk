@@ -19,25 +19,29 @@ Global Args       := ""
 , TaskCreateFile  := "ScheduledTask-Create.ps1"
 , TaskRemoveFile  := "ScheduledTask-Remove.ps1"
 , LibreWolfExe    := "librewolf.exe"
+, PortableExe     := A_ScriptDir "\LibreWolf-Portable.exe"
 , SelfUpdateZip   := "LibreWolf-WinUpdater.zip"
 , ExtractDir      := A_Temp "\LibreWolf-Extracted"
 , IsPortable      := False
 , RunningPortable := A_Args[1] = "/Portable"
-, Verbose         := A_Args[1] <> "/Scheduled"
+, Scheduled       := A_Args[1] = "/Scheduled"
+, SettingTask     := A_Args[1] = "/CreateTask" Or A_Args[1] = "/RemoveTask"
 , ChangesMade     := False
-, Path, ProgramW6432, Build, UpdateSelf, Task, CurrentUpdaterVersion, ReleaseInfo, CurrentVersion, NewVersion, SetupFile, LogField, Progress, VerField
+, Path, ProgramW6432, Build, UpdateSelf, Task, CurrentUpdaterVersion, ReleaseInfo, CurrentVersion, NewVersion, SetupFile, GuiHwnd, LogField, Progress, VerField, SetTaskField, UpdateButton
 
 ; Strings
 Global _LibreWolf     := "LibreWolf"
 , _Updater            := "LibreWolf WinUpdater"
 , _NoConnection       := "Could not establish a connection to GitLab."
 , _IsRunningError     := _Updater " is already running."
+, _IsElevated         := "To set up scheduled tasks properly, please do not run WinUpdater as administrator."
 , _NoDefaultBrowser   := "Could not open your default browser."
 , _Checking           := "Checking for new version..."
+, _SetTask            := "Set a scheduled task for automatic update checks while user {} is logged on."
 , _GetPathError       := "Could not find the path to LibreWolf.`nBrowse to " LibreWolfExe " in the following dialog."
 , _SelectFileTitle    := _Updater " - Select " LibreWolfExe "..."
 , _WritePermError     := "Could not write to`n{}. Please check the current user account's write permissions for this folder."
-, _CopyError          := "Could not copy file {}"
+, _CopyError          := "Could not copy {}"
 , _GetBuildError      := "Could not determine the build architecture (32/64-bit) of LibreWolf."
 , _GetVersionError    := "Could not determine the current version of`n{}"
 , _DownloadJsonError  := "Could not download the {Task} releases file."
@@ -46,13 +50,16 @@ Global _LibreWolf     := "LibreWolf"
 , _Downloading        := "Downloading new version..."
 , _DownloadSelfError  := "Could not download the new WinUpdater version."
 , _DownloadSetupError := "Could not download the setup file."
+, _Downloaded         := "New version downloaded."
 , _FindSumsUrlError   := "Could not find the URL to the checksum file."
 , _FindChecksumError  := "Could not find the checksum for the downloaded file."
 , _ChecksumMatchError := "The file checksum did not match, so it's possible the download failed."
 , _ChangesMade        := "However, new files were written to the target folder!"
 , _NoChangesMade      := "No changes were made to your LibreWolf folder."
 , _Extracting         := "Extracting portable version..."
+, _StartUpdate        := "  &Start update  "
 , _Installing         := "Installing new version..."
+, _UpdateError        := "Error while updating."
 , _SilentUpdateError  := "Silent update did not complete.`nDo you want to run the interactive installer?"
 , _NewVersionFound    := "A new version is available.`nClose LibreWolf to start updating..."
 , _NoNewVersion       := "No new version found."
@@ -60,25 +67,26 @@ Global _LibreWolf     := "LibreWolf"
 , _MoveToTargetError  := "Could not move the following file into the target folder:`n{}"
 , _IsUpdated          := "LibreWolf has been updated."
 , _To                 := "to"
-, _GoToWebsite        := "Click OK to check for solutions on the website or to open an issue. Click Cancel to exit."
+, _GoToWebsite        := "Please check the <a>project website</a> for possible solutions or open an issue to get help."
 
 Init()
 CheckPaths()
 CheckArgs()
+GetCurrentVersion()
 If (ThisUpdaterRunning())
-	Die(_IsRunningError,, False)	; Don't show this if not Verbose
+	Die(_IsRunningError,, False)	; Don't show this if Scheduled
+Unelevate(A_ScriptFullPath, Args, A_ScriptDir)
 CheckWriteAccess()
+If (SettingTask)
+	SetTask()
+CheckConnection()
 If (UpdateSelf And A_IsCompiled)
 	SelfUpdate()
-GetCurrentVersion()
 If (GetNewVersion())
 	StartUpdate()
 Exit()
 
 Init() {
-	If (!Download("https://gitlab.com/manifest.json"))
-		Die(_NoConnection,, False)	; Don't show this if not Verbose
-
 	EnvGet, ProgramW6432, ProgramW6432
 	IniRead, UpdateSelf, %IniFile%, Settings, UpdateSelf, 1	; Using "False" in .ini causes If (UpdateSelf) to be True
 	FileGetVersion, CurrentUpdaterVersion, %A_ScriptFullPath%
@@ -92,22 +100,29 @@ Init() {
 	Menu, Tray, Default, WinUpdater
 
 	; Set up GUI
-	If (Verbose) {
-		Gui, New, -MinimizeBox -MaximizeBox, %_Updater% %CurrentUpdaterVersion%
-		Gui, Color, 23222B
-		Gui, Add, Picture, x10 y10 w64 h64 Icon2, %A_ScriptFullPath%
-		Gui, Font, c00ACFF s22 w700, Segoe UI
-		Gui, Add, Text, x86 y4, LibreWolf
-		Gui, Font, cFFFFFF s9 w700
-		Gui, Add, Text, vVerField x86 y42 w222
-		Gui, Font, w400
-		Gui, Add, Progress, vProgress w222 h20 c00ACFF, 25
-		Gui, Add, Text, vLogField w222, %_Checking%
+	Gui, New, +HwndGuiHwnd -MaximizeBox, %_Updater% %CurrentUpdaterVersion%
+	Gui, Color, 23222B
+	Gui, Add, Picture, x10 y10 w64 h64 Icon2, %A_ScriptFullPath%
+	Gui, Font, c00ACFF s22 w700, Segoe UI
+	Gui, Add, Text, x85 y4 BackgroundTrans, LibreWolf
+	Gui, Font, cFFFFFF s9 w700
+	Gui, Add, Text, vVerField x86 y42 w222 BackgroundTrans
+	Gui, Font, w400
+	Gui, Add, Progress, vProgress w217 h20 c00ACFF, 25
+	Gui, Add, Text, vLogField w222 BackgroundTrans
+	Gui, Margin,, 15
+
+	If (SettingTask Or !A_Args.Length()) {	; No arguments: when not running as portable or as a scheduled task
+		If (!IsPortable) {	; No scheduled tasks for portable version
+			Gui, Add, CheckBox, vSetTaskField gSetTask x15 y+10 w290 cBCBCBC Center Check3 -Tabstop, % StrReplace(_SetTask, "{}", A_UserName)
+			CheckTask()
+		}
+		Gui, Show
 	}
 }
 
-About(ItemName) {
-	Url = https://codeberg.org/ltguillaume/librewolf-%ItemName%
+About(ItemName, GuiEvent) {
+	Url := "https://codeberg.org/ltguillaume/librewolf-" (GuiEvent ? "WinUpdater" : ItemName)
 	Try Run, %Url%
 	Catch {
 		RegRead, DefBrowser, HKCR, .html
@@ -236,16 +251,23 @@ GetCurrentVersion() {
 
 	If (!CurrentVersion)
 		Die(_GetVersionError, Path)
+
+	GuiControl,, VerField, %CurrentVersion% (%Build%)
+}
+
+CheckConnection() {
+	If (!Download("https://gitlab.com/manifest.json"))
+		Die(_NoConnection,, False)	; Don't show this if not Scheduled
 }
 
 GetNewVersion() {
+	Progress(_Checking)
 	Task := _LibreWolf
 	NewVersion := GetLatestVersion()
 ;MsgBox, ReleaseInfo = %ReleaseInfo%`nCurrentVersion = %CurrentVersion%`nNewVersion = %NewVersion%
 	IniRead, LastUpdateTo, %IniFile%, Log, LastUpdateTo, False
-	If (NewVersion = CurrentVersion Or NewVersion = LastUpdateTo) {
-		If (Verbose And !RunningPortable)
-			Notify(_NoNewVersion, CurrentVersion, 6000)
+	If (NewVersion = CurrentVersion) {
+		Progress(_NoNewVersion, True)
 		Log("LastResult", _NoNewVersion)
 		Return False
 	}
@@ -253,11 +275,9 @@ GetNewVersion() {
 }
 
 StartUpdate() {
-	; Show GUI when not running as a scheduled task
-	If (Verbose) {
-		GuiControl,, VerField, %CurrentVersion% %_To% %NewVersion% (%Build%)
+	GuiControl,, VerField, %CurrentVersion% %_To% %NewVersion% (%Build%)
+	If (Portable Or !Scheduled)
 		Gui, Show
-	}
 
 	WaitForClose()
 }
@@ -285,7 +305,7 @@ DownloadUpdate() {
 	; Get setup file URL
 	FilenameEnd := Build (IsPortable ? "-portable\.zip" : "-setup\.exe")
 	RegExMatch(ReleaseInfo, "i)""name"":""(librewolf-.{1,30}?" FilenameEnd ")"",\s*""url"":""(.+?)""", DownloadUrl)
-	;MsgBox, Downloading`n%DownloadUrl2%`nto`n%DownloadUrl1%
+;MsgBox, Downloading`n%DownloadUrl2%`nto`n%DownloadUrl1%
 	If (!DownloadUrl1 Or !DownloadUrl2)
 		Die(_FindUrlError)
 
@@ -317,8 +337,16 @@ VerifyChecksum() {
 
 	If (IsPortable)
 		ExtractPortable()
-	Else
-		Install()
+	Else {
+		If (A_IsAdmin)
+			Install()
+		Else {
+			Progress(_Downloaded)
+			Gui, Add, Button, vUpdateButton gInstall w148 x86 y110 Default, %_StartUpdate%
+			GuiControl, Move, SetTaskField, y146
+			ShowGui()
+		}
+	}
 }
 
 ExtractPortable() {
@@ -355,21 +383,26 @@ ExtractPortable() {
 
 Install() {
 	Progress(_Installing)
-	If (!Verbose)
+	If (Scheduled)
 		Notify(_Installing, CurrentVersion " " _To " v" NewVersion, 3000)
 	Folder := StrReplace(Path, LibreWolfExe, "")
 ;MsgBox, %SetupFile% /S /D=%Folder%
 	; Run silent setup
 	RunWait, %SetupFile% /S /D=%Folder%,, UseErrorLevel
-	If (ErrorLevel) {
+	If (!ErrorLevel)
+		WriteReport()
+	Else {
 		MsgBox, 52, %_Updater%, %_SilentUpdateError%
 		IfMsgBox No
-			Exit()
-		IfMsgBox Yes
+			Progress(_UpdateError, True)
+		Else {
 			RunWait, %SetupFile% /D=%Folder%,, UseErrorLevel
+			If (ErrorLevel)
+				Progress(_UpdateError, True)
+			Else
+				WriteReport()
+		}
 	}
-
-	WriteReport()
 }
 
 WriteReport() {
@@ -378,19 +411,25 @@ WriteReport() {
 	Log("LastUpdateFrom", CurrentVersion)
 	Log("LastUpdateTo", NewVersion)
 	Log("LastResult", _IsUpdated)
-	Notify(_IsUpdated, CurrentVersion " " _To " v" NewVersion, RunningPortable ? 0 : 60000)
+	Progress(_IsUpdated, True)
+	Notify(_IsUpdated, CurrentVersion " " _To " v" NewVersion, Scheduled ? 60000 : 0)
 
 	Exit()
 }
 
 Exit() {
+; Wait for close
+	If (!A_Args.Length() And WinExist("ahk_id " GuiHwnd)) {
+		WinWaitClose, ahk_id %GuiHwnd%
+	} Else
+		Gui, Destroy
+
 ; Clean up
-	Gui, Destroy
-	If (RunningPortable) {
+	If (RunningPortable And FileExist(PortableExe)) {
 		A_Args.RemoveAt(1)	; Remove "/Portable" from array
 		CheckArgs()
-	;MsgBox, %Args%
-		Run, %A_ScriptDir%\LibreWolf-Portable.exe %Args%
+;MsgBox, %Args%
+		Run, %PortableExe% %Args%
 	}
 	Log("LastRun",, True)
 	If (SetupFile) {
@@ -411,12 +450,16 @@ Die(Error, Var = False, Show = True) {
 		Error := StrReplace(Error, "{}", Var)
 	Error := StrReplace(Error, "{Task}", Task)
 	IniWrite, %Error%, %IniFile%, Log, LastResult
-	If (Show Or Verbose) {
-		MsgBox, 305, %_Updater% %CurrentUpdaterVersion%, % Error "`n" (ChangesMade ? _ChangesMade : _NoChangesMade) "`n`n" _GoToWebsite
-		IfMsgBox Yes
-			About("winupdater")
-	}
-	Exit()
+	GuiControl, Hide, Progress
+	GuiControl, Hide, LogField
+	GuiControl, Disable, SetTaskField
+	GuiControl, Hide, SetTaskField
+	Gui, Font, s36
+	Gui, Add, Text, x256 y0 cYellow, % Chr("0x26A0")
+	Gui, Font, s9
+	Msg := Error " " (ChangesMade ? _ChangesMade : _NoChangesMade) "`n`n" _GoToWebsite
+	Gui, Add, Link, gAbout x15 y81 w290 cCCCCCC, %Msg%
+	ShowGui()
 }
 
 Download(URL) {
@@ -468,6 +511,7 @@ GetLatestVersion() {
 }
 
 GuiClose() {
+	Gui, Destroy
 	Exit()
 }
 
@@ -570,20 +614,86 @@ Notify(Msg, Ver = 0, Delay = 0) {
 	If (!Ver)
 		Ver := NewVersion
 	Menu, Tray, Tip, %Msg%
-	If (Verbose) {
-		GuiControl,, LogField, % SubStr(Msg, InStr(Msg, "`n") + 1)
-		GuiControl,, Progress, +25
-	}
-	If (!Verbose Or Delay) {
+	If (Scheduled Or Delay) {
 		Gui, Destroy
 		TrayTip, %Msg%, v%Ver%,, 16
 		Sleep, %Delay%
 	}
 }
 
-Progress(Msg) {
-	If (Verbose)
-		Notify(Msg)
+Progress(Msg, Ended = False) {
+	GuiControl,, LogField, % SubStr(Msg, InStr(Msg, "`n") + 1)
+	If (Ended)
+		GuiControl,, Progress, 100
 	Else
-		Menu, Tray, Tip, %Msg%
+		GuiControl,, Progress, +25
+	Menu, Tray, Tip, %Msg%
+}
+
+CheckTask() {
+	RunWait schtasks.exe /query /tn "%_Updater% (%A_UserName%)",, Hide
+	GuiControl,, SetTaskField, % ErrorLevel = 0
+	Gui, Submit, NoHide
+}
+
+SetTask() {
+	If (SettingTask) {
+		Progress("")
+		If (A_Args[1] = "/CreateTask")
+			SetTaskField := 0
+		Else If (A_Args[1] = "/RemoveTask")
+			SetTaskField := 1
+		Sleep, 1000
+	}
+
+	Script := A_ScriptDir "\" (SetTaskField = 0 ? TaskCreateFile : TaskRemoveFile)
+	GuiControl,, SetTaskField, -1
+	RunWait, powershell.exe -NoProfile -ExecutionPolicy RemoteSigned -File "%Script%"
+	WinWaitActive, ahk_id %GuiHwnd%
+	Sleep, 1000
+	WinWaitActive
+	CheckTask()
+
+	If (SettingTask) {
+		SettingTask := 0
+		ShowGui()	; Don't start updating, just wait for close
+	}
+}
+
+ShowGui() {
+	mode := WinExist("ahk_id " + GuiHwnd) ? "NA" : "Minimize"
+	Gui, Show, AutoSize %mode%
+	If (!WinActive("ahk_id " + GuiHwnd))
+		Gui, Flash
+	WinWaitClose, ahk_id %GuiHwnd%
+}
+
+Unelevate(prms*) {
+	If (!A_IsAdmin Or IsPortable Or Scheduled)
+		Return
+
+	; ShellRun(prms*) from AutoHotkey's Installer.ahk
+	Try {
+    shellWindows := ComObjCreate("Shell.Application").Windows
+    VarSetCapacity(_hwnd, 4, 0)
+    desktop := shellWindows.FindWindowSW(0, "", 8, ComObj(0x4003, &_hwnd), 1)
+    if ptlb := ComObjQuery(desktop
+        , "{4C96BE40-915C-11CF-99D3-00AA004AE837}"  ; SID_STopLevelBrowser
+        , "{000214E2-0000-0000-C000-000000000046}") ; IID_IShellBrowser
+    {
+        if DllCall(NumGet(NumGet(ptlb+0)+15*A_PtrSize), "ptr", ptlb, "ptr*", psv:=0) = 0
+        {
+            VarSetCapacity(IID_IDispatch, 16)
+            NumPut(0x46000000000000C0, NumPut(0x20400, IID_IDispatch, "int64"), "int64")
+            DllCall(NumGet(NumGet(psv+0)+15*A_PtrSize), "ptr", psv
+                , "uint", 0, "ptr", &IID_IDispatch, "ptr*", pdisp:=0)
+            shell := ComObj(9,pdisp,1).Application
+            shell.ShellExecute(prms*)
+            ObjRelease(psv)
+        }
+        ObjRelease(ptlb)
+    }
+    ExitApp
+	} Catch e
+		Die(_IsElevated)
 }

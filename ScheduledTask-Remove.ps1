@@ -1,3 +1,6 @@
+Write-Output "Removing scheduled task for LibreWolf WinUpdater..."
+$Title = "LibreWolf WinUpdater"
+$Host.UI.RawUI.WindowTitle = $Title
 If (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))
 {
   # Relaunch as an elevated process
@@ -9,6 +12,6 @@ If (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 
 $User = If ($Args[0]) {$Args[0]} Else {[Environment]::UserName}
 
-Unregister-ScheduledTask -TaskName "LibreWolf WinUpdater ($User)" -Confirm:$False
-Write-Output Done.
+Unregister-ScheduledTask -TaskName "$Title ($User)" -Confirm:$False
+Write-Output "Done."
 [Console]::ReadKey()
