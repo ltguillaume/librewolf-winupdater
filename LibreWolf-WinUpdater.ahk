@@ -1,5 +1,5 @@
 ; LibreWolf WinUpdater - https://codeberg.org/ltguillaume/librewolf-winupdater
-;@Ahk2Exe-SetFileVersion 1.7.2
+;@Ahk2Exe-SetFileVersion 1.7.3
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -362,11 +362,11 @@ ExtractPortable() {
 	Loop, Files, %ExtractDir%\*, D
 	{
 ;MsgBox, Traversing %A_LoopFilePath%
-		If (FileExist(A_LoopFilePath "\LibreWolf-WinUpdater.exe"))
-			FileMove, %A_ScriptFullPath%, %A_ScriptFullPath%.pbak, 1
 		SetWorkingDir, %A_LoopFilePath%	; Enter the first folder of the extracted archive
 		Loop, Files, *, R
 		{
+			If (A_LoopFileName = "LibreWolf-WinUpdater.exe")
+				Continue
 			FileGetSize, CurrentFileSize, %A_ScriptDir%\%A_LoopFilePath%
 ;MsgBox, % A_LoopFilePath "`n" A_LoopFileSize "`n" CurrentFileSize "`n" Hash(A_LoopFilePath) "`n" Hash(A_ScriptDir "\" A_LoopFilePath)
 			If (!FileExist(A_ScriptDir "\" A_LoopFileDir))
