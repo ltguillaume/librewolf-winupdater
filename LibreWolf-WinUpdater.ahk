@@ -1,5 +1,5 @@
 ; LibreWolf WinUpdater - https://codeberg.org/ltguillaume/librewolf-winupdater
-;@Ahk2Exe-SetFileVersion 1.6.4
+;@Ahk2Exe-SetFileVersion 1.7.0
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -27,7 +27,7 @@ Global Args       := ""
 , Scheduled       := A_Args[1] = "/Scheduled"
 , SettingTask     := A_Args[1] = "/CreateTask" Or A_Args[1] = "/RemoveTask"
 , ChangesMade     := False
-, Path, ProgramW6432, Build, UpdateSelf, Task, CurrentUpdaterVersion, ReleaseInfo, CurrentVersion, NewVersion, SetupFile, GuiHwnd, LogField, Progress, VerField, SetTaskField, UpdateButton
+, Path, ProgramW6432, Build, UpdateSelf, Task, CurrentUpdaterVersion, ReleaseInfo, CurrentVersion, NewVersion, SetupFile, GuiHwnd, LogField, Progress, VerField, TaskSetField, UpdateButton
 
 ; Strings
 Global _LibreWolf     := "LibreWolf"
@@ -37,7 +37,7 @@ Global _LibreWolf     := "LibreWolf"
 , _IsElevated         := "To set up scheduled tasks properly, please do not run WinUpdater as administrator."
 , _NoDefaultBrowser   := "Could not open your default browser."
 , _Checking           := "Checking for new version..."
-, _SetTask            := "Set a scheduled task for automatic update checks while user {} is logged on."
+, _TaskSet            := "Schedule a task for automatic update checks while user {} is logged on."
 , _GetPathError       := "Could not find the path to LibreWolf.`nBrowse to " LibreWolfExe " in the following dialog."
 , _SelectFileTitle    := _Updater " - Select " LibreWolfExe "..."
 , _WritePermError     := "Could not write to`n{}. Please check the current user account's write permissions for this folder."
@@ -78,7 +78,7 @@ If (ThisUpdaterRunning())
 Unelevate(A_ScriptFullPath, Args, A_ScriptDir)
 CheckWriteAccess()
 If (SettingTask)
-	SetTask()
+	TaskSet()
 CheckConnection()
 If (UpdateSelf And A_IsCompiled)
 	SelfUpdate()
@@ -114,8 +114,8 @@ Init() {
 
 	If (SettingTask Or !A_Args.Length()) {	; No arguments: when not running as portable or as a scheduled task
 		If (!IsPortable) {	; No scheduled tasks for portable version
-			Gui, Add, CheckBox, vSetTaskField gSetTask x15 y+10 w290 cBCBCBC Center Check3 -Tabstop, % StrReplace(_SetTask, "{}", A_UserName)
-			CheckTask()
+			Gui, Add, CheckBox, vTaskSetField gTaskSet x15 y+10 w290 cBCBCBC Center Check3 -Tabstop, % StrReplace(_TaskSet, "{}", A_UserName)
+			TaskCheck()
 		}
 		Gui, Show
 	}
@@ -343,7 +343,7 @@ VerifyChecksum() {
 		Else {
 			Progress(_Downloaded)
 			Gui, Add, Button, vUpdateButton gInstall w148 x86 y110 Default, %_StartUpdate%
-			GuiControl, Move, SetTaskField, y146
+			GuiControl, Move, TaskSetField, y146
 			ShowGui()
 		}
 	}
@@ -419,9 +419,9 @@ WriteReport() {
 
 Exit() {
 ; Wait for close
-	If (!A_Args.Length() And WinExist("ahk_id " GuiHwnd)) {
+	If (!A_Args.Length() And WinExist("ahk_id " GuiHwnd))
 		WinWaitClose, ahk_id %GuiHwnd%
-	} Else
+	Else
 		Gui, Destroy
 
 ; Clean up
@@ -452,13 +452,14 @@ Die(Error, Var = False, Show = True) {
 	IniWrite, %Error%, %IniFile%, Log, LastResult
 	GuiControl, Hide, Progress
 	GuiControl, Hide, LogField
-	GuiControl, Disable, SetTaskField
-	GuiControl, Hide, SetTaskField
+	GuiControl, Disable, TaskSetField
+	GuiControl, Hide, TaskSetField
 	Gui, Font, s36
 	Gui, Add, Text, x256 y0 cYellow, % Chr("0x26A0")
 	Gui, Font, s9
 	Msg := Error " " (ChangesMade ? _ChangesMade : _NoChangesMade) "`n`n" _GoToWebsite
 	Gui, Add, Link, gAbout x15 y81 w290 cCCCCCC, %Msg%
+	ControlFocus, VerField
 	ShowGui()
 }
 
@@ -630,42 +631,42 @@ Progress(Msg, Ended = False) {
 	Menu, Tray, Tip, %Msg%
 }
 
-CheckTask() {
-	RunWait schtasks.exe /query /tn "%_Updater% (%A_UserName%)",, Hide
-	GuiControl,, SetTaskField, % ErrorLevel = 0
-	Gui, Submit, NoHide
-}
-
-SetTask() {
-	If (SettingTask) {
-		Progress("")
-		If (A_Args[1] = "/CreateTask")
-			SetTaskField := 0
-		Else If (A_Args[1] = "/RemoveTask")
-			SetTaskField := 1
-		Sleep, 1000
-	}
-
-	Script := A_ScriptDir "\" (SetTaskField = 0 ? TaskCreateFile : TaskRemoveFile)
-	GuiControl,, SetTaskField, -1
-	RunWait, powershell.exe -NoProfile -ExecutionPolicy RemoteSigned -File "%Script%"
-	WinWaitActive, ahk_id %GuiHwnd%
-	Sleep, 1000
-	WinWaitActive
-	CheckTask()
-
-	If (SettingTask) {
-		SettingTask := 0
-		ShowGui()	; Don't start updating, just wait for close
-	}
-}
-
 ShowGui() {
 	mode := WinExist("ahk_id " + GuiHwnd) ? "NA" : "Minimize"
 	Gui, Show, AutoSize %mode%
 	If (!WinActive("ahk_id " + GuiHwnd))
 		Gui, Flash
 	WinWaitClose, ahk_id %GuiHwnd%
+}
+
+TaskCheck() {
+	RunWait schtasks.exe /query /tn "%_Updater% (%A_UserName%)",, Hide
+	GuiControl,, TaskSetField, % ErrorLevel = 0
+	Gui, Submit, NoHide
+}
+
+TaskSet() {
+	If (SettingTask) {
+		Progress("")
+		If (A_Args[1] = "/CreateTask")
+			TaskSetField := 0
+		Else If (A_Args[1] = "/RemoveTask")
+			TaskSetField := 1
+		Sleep, 1000
+	}
+
+	Script := A_ScriptDir "\" (TaskSetField = 0 ? TaskCreateFile : TaskRemoveFile)
+	GuiControl,, TaskSetField, -1
+	RunWait, powershell.exe -NoProfile -ExecutionPolicy RemoteSigned -File "%Script%"
+	WinWaitActive, ahk_id %GuiHwnd%
+	Sleep, 1000
+	WinWaitActive
+	TaskCheck()
+
+	If (SettingTask) {
+		SettingTask := 0
+		ShowGui()	; Don't start updating, just wait for close
+	}
 }
 
 Unelevate(prms*) {

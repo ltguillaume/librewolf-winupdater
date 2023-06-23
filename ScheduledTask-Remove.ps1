@@ -3,7 +3,7 @@ $Title = "LibreWolf WinUpdater"
 $Host.UI.RawUI.WindowTitle = $Title
 If (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))
 {
-  # Relaunch as an elevated process
+  Write-Output "Requesting administrator privileges"
   $User = [Environment]::UserName
   $Script = $MyInvocation.MyCommand.Path
   Start-Process powershell.exe -Verb RunAs "-ExecutionPolicy RemoteSigned -File `"$PSCommandPath`" `"${User}`""
