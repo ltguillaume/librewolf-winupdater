@@ -108,7 +108,7 @@ Init() {
 	Gui, Font, cFFFFFF s9 w700
 	Gui, Add, Text, vVerField x86 y42 w222 BackgroundTrans
 	Gui, Font, w400
-	Gui, Add, Progress, vProgress w217 h20 c00ACFF, 25
+	Gui, Add, Progress, vProgress w217 h20 c00ACFF, 10
 	Gui, Add, Text, vLogField w222 BackgroundTrans
 	Gui, Margin,, 15
 
@@ -175,8 +175,12 @@ CheckArgs() {
 ThisUpdaterRunning() {
 	Process, Exist	; Put launcher's process id into ErrorLevel
 	Query := "Select ProcessId from Win32_Process where ProcessId!=" ErrorLevel " and ExecutablePath=""" StrReplace(A_ScriptFullPath, "\", "\\") """"
-	For Process in ComObjGet("winmgmts:").ExecQuery(Query)
-		Return True
+	For Process in ComObjGet("winmgmts:").ExecQuery(Query) {
+		Sleep, 1000
+		For Process in ComObjGet("winmgmts:").ExecQuery(Query)
+			Return True
+		Break
+	}
 }
 
 SelfUpdate() {
@@ -458,7 +462,6 @@ Die(Error, Var = False, Show = True) {
 	Gui, Font, s9
 	Msg := Error " " (ChangesMade ? _ChangesMade : _NoChangesMade) "`n`n" _GoToWebsite
 	Gui, Add, Link, gAbout x15 y81 w290 cCCCCCC, %Msg%
-	ControlFocus, VerField
 	ShowGui()
 }
 
@@ -626,15 +629,16 @@ Progress(Msg, Ended = False) {
 	If (Ended)
 		GuiControl,, Progress, 100
 	Else
-		GuiControl,, Progress, +25
+		GuiControl,, Progress, +15
 	Menu, Tray, Tip, %Msg%
 }
 
 ShowGui() {
-	mode := WinExist("ahk_id " + GuiHwnd) ? "NA" : "Minimize"
-	Gui, Show, AutoSize %mode%
+	scheduledmode := WinExist("ahk_id " + GuiHwnd) ? "NA" : "Minimize"
+	Gui, Show, % "AutoSize" (IsPortable ? "" : scheduledmode)
 	If (!WinActive("ahk_id " + GuiHwnd))
 		Gui, Flash
+	ControlFocus, VerField
 	WinWaitClose, ahk_id %GuiHwnd%
 }
 
