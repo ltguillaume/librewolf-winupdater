@@ -1,5 +1,5 @@
 ; LibreWolf WinUpdater - https://codeberg.org/ltguillaume/librewolf-winupdater
-;@Ahk2Exe-SetFileVersion 1.7.1
+;@Ahk2Exe-SetFileVersion 1.7.2
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -291,6 +291,7 @@ WaitForClose() {
 	Notified := False
 	For Proc in ComObjGet("winmgmts:").ExecQuery("Select ProcessId from Win32_Process where ExecutablePath=""" PathDS """") {
 		If (!Notified) {
+			Progress(_NewVersionFound)
 			Notify(_NewVersionFound)
 			Notified := True
 		}
