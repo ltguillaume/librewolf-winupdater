@@ -13,5 +13,5 @@ If (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 $User = If ($Args[0]) {$Args[0]} Else {[Environment]::UserName}
 
 Unregister-ScheduledTask -TaskName "$Title ($User)" -Confirm:$False
-Write-Output "Done."
+Write-Output "Done. Press any key to close this window."
 [Console]::ReadKey()

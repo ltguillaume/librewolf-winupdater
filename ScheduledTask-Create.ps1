@@ -18,5 +18,5 @@ $AtLogon.Delay = 'PT1M'
 $User     = If ($Args[0]) {$Args[0]} Else {[Environment]::UserName}
 
 Register-ScheduledTask -TaskName "$Title ($User)" -Action $Action -Settings $Settings -Trigger $4Hours,$AtLogon -User $User -RunLevel Highest -Force
-Write-Output "Done."
+Write-Output "Done. Press any key to close this window."
 [Console]::ReadKey()
