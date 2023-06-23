@@ -1,5 +1,5 @@
 ; LibreWolf WinUpdater - https://codeberg.org/ltguillaume/librewolf-winupdater
-;@Ahk2Exe-SetFileVersion 1.7.0
+;@Ahk2Exe-SetFileVersion 1.7.1
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -22,7 +22,7 @@ Global Args       := ""
 , PortableExe     := A_ScriptDir "\LibreWolf-Portable.exe"
 , SelfUpdateZip   := "LibreWolf-WinUpdater.zip"
 , ExtractDir      := A_Temp "\LibreWolf-Extracted"
-, IsPortable      := False
+, IsPortable      := FileExist(A_ScriptDir "\LibreWolf-Portable.exe")
 , RunningPortable := A_Args[1] = "/Portable"
 , Scheduled       := A_Args[1] = "/Scheduled"
 , SettingTask     := A_Args[1] = "/CreateTask" Or A_Args[1] = "/RemoveTask"
@@ -134,10 +134,9 @@ About(ItemName, GuiEvent) {
 }
 
 CheckPaths() {
-	If (FileExist(A_ScriptDir "\LibreWolf-Portable.exe")) {
-		IsPortable := True
+	If (IsPortable)
 		Path := A_ScriptDir "\LibreWolf\librewolf.exe"
-	} Else {
+	Else {
 		IniRead, Path, %IniFile%, Settings, Path, 0	; Need to use 0, because False would become a string
 		If (!Path)
 			RegRead, Path, HKLM\SOFTWARE\Clients\StartMenuInternet\LibreWolf\shell\open\command
