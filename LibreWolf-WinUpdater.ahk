@@ -1,5 +1,5 @@
 ; LibreWolf WinUpdater - https://codeberg.org/ltguillaume/librewolf-winupdater
-;@Ahk2Exe-SetFileVersion 1.7.3
+;@Ahk2Exe-SetFileVersion 1.7.4
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -102,14 +102,14 @@ Init() {
 	; Set up GUI
 	Gui, New, +HwndGuiHwnd -MaximizeBox, %_Updater% %CurrentUpdaterVersion%
 	Gui, Color, 23222B
-	Gui, Add, Picture, x10 y10 w64 h64 Icon2, %A_ScriptFullPath%
+	Gui, Add, Picture, x12 y10 w64 h64 Icon2, %A_ScriptFullPath%
 	Gui, Font, c00ACFF s22 w700, Segoe UI
 	Gui, Add, Text, x85 y4 BackgroundTrans, LibreWolf
 	Gui, Font, cFFFFFF s9 w700
 	Gui, Add, Text, vVerField x86 y42 w222 BackgroundTrans
 	Gui, Font, w400
 	Gui, Add, Progress, vProgress w217 h20 c00ACFF, 10
-	Gui, Add, Text, vLogField w222 BackgroundTrans
+	Gui, Add, Text, vLogField w222
 	Gui, Margin,, 15
 
 	If (SettingTask Or !A_Args.Length()) {	; No arguments: when not running as portable or as a scheduled task
@@ -458,8 +458,8 @@ Die(Error, Var = False, Show = True) {
 	GuiControl, Hide, LogField
 	GuiControl, Disable, TaskSetField
 	GuiControl, Hide, TaskSetField
-	Gui, Font, s36
-	Gui, Add, Text, x256 y0 cYellow, % Chr("0x26A0")
+	Gui, Font, s38
+	Gui, Add, Text, x264 y-2 cYellow, % Chr("0x26A0")
 	Gui, Font, s9
 	Msg := Error " " (ChangesMade ? _ChangesMade : _NoChangesMade) "`n`n" _GoToWebsite
 	Gui, Add, Link, gAbout x15 y81 w290 cCCCCCC, %Msg%
