@@ -1,5 +1,5 @@
 ; LibreWolf WinUpdater - https://codeberg.org/ltguillaume/librewolf-winupdater
-;@Ahk2Exe-SetFileVersion 1.7.4
+;@Ahk2Exe-SetFileVersion 1.7.5
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -37,7 +37,7 @@ Global _LibreWolf     := "LibreWolf"
 , _IsElevated         := "To set up scheduled tasks properly, please do not run WinUpdater as administrator."
 , _NoDefaultBrowser   := "Could not open your default browser."
 , _Checking           := "Checking for new version..."
-, _TaskSet            := "Schedule a task for automatic update checks while user {} is logged on."
+, _TaskSet            := "Schedule a task for automatic update checks while`nuser {} is logged on."
 , _GetPathError       := "Could not find the path to LibreWolf.`nBrowse to " LibreWolfExe " in the following dialog."
 , _SelectFileTitle    := _Updater " - Select " LibreWolfExe "..."
 , _WritePermError     := "Could not write to`n{}. Please check the current user account's write permissions for this folder."
@@ -67,7 +67,7 @@ Global _LibreWolf     := "LibreWolf"
 , _MoveToTargetError  := "Could not move the following file into the target folder:`n{}"
 , _IsUpdated          := "LibreWolf has been updated."
 , _To                 := "to"
-, _GoToWebsite        := "Please check the <a>project website</a> for possible solutions or open an issue to get help."
+, _GoToWebsite        := "<a>Restart WinUpdater</a> or visit the <a>project website</a> for help."
 
 Init()
 CheckPaths()
@@ -94,10 +94,11 @@ Init() {
 	SetWorkingDir, %A_Temp%
 	Menu, Tray, Tip, %_Updater% %CurrentUpdaterVersion%
 	Menu, Tray, NoStandard
-	Menu, Tray, Add, Portable, About
-	Menu, Tray, Add, WinUpdater, About
+	Menu, Tray, Add, Show, TrayAction
+	Menu, Tray, Add, Portable, TrayAction
+	Menu, Tray, Add, WinUpdater, TrayAction
 	Menu, Tray, Add, Exit, Exit
-	Menu, Tray, Default, WinUpdater
+	Menu, Tray, Default, Show
 
 	; Set up GUI
 	Gui, New, +HwndGuiHwnd -MaximizeBox, %_Updater% %CurrentUpdaterVersion%
@@ -113,7 +114,7 @@ Init() {
 	Gui, Margin,, 15
 
 	If (SettingTask Or !A_Args.Length()) {	; No arguments: when not running as portable or as a scheduled task
-		If (!IsPortable) {	; No scheduled tasks for portable version
+		If (!IsPortable And FileExist(A_ScriptDir "\" TaskCreateFile) And FileExist(A_ScriptDir "\" TaskRemoveFile)) {	; No scheduled tasks for portable version
 			Gui, Add, CheckBox, vTaskSetField gTaskSet x15 y+10 w290 cBCBCBC Center Check3 -Tabstop, % StrReplace(_TaskSet, "{}", A_UserName)
 			TaskCheck()
 		}
@@ -121,8 +122,20 @@ Init() {
 	}
 }
 
-About(ItemName, GuiEvent) {
-	Url := "https://codeberg.org/ltguillaume/librewolf-" (GuiEvent ? "WinUpdater" : ItemName)
+TrayAction(ItemName, GuiEvent, LinkIndex) {
+	If (LinkIndex = 1)
+		Return Restart()
+	If (LinkIndex = 2)
+		ItemName := "WinUpdater"
+	Else If (ItemName = "Show") {
+		If (WinExist("ahk_id" GuiHwnd))
+		 	WinActivate
+		Else
+			Gui, Show
+		Return
+	}
+
+	Url := "https://codeberg.org/ltguillaume/librewolf-" ItemName
 	Try Run, %Url%
 	Catch {
 		RegRead, DefBrowser, HKCR, .html
@@ -201,8 +214,10 @@ SelfUpdate() {
 	If (!Extract(A_Temp "\" SelfUpdateZip, A_ScriptDir))
 		Return Log("SelfUpdate", _ExtractionError, True)
 
-	If (IsPortable)
-		FileDelete, %A_ScriptDir%\ScheduledTask*.ps1
+	If (IsPortable) {
+		FileDelete, %A_ScriptDir%\%TaskCreateFile%
+		FileDelete, %A_ScriptDir%\%TaskRemoveFile%
+	}
 
 	If (!FileExist(A_ScriptFullPath))
 		Die(_ExtractionError)
@@ -421,9 +436,13 @@ WriteReport() {
 	Exit()
 }
 
-Exit() {
+Restart() {
+	Return Exit(True)
+}
+
+Exit(Restart = False) {
 ; Wait for close
-	If (!A_Args.Length() And WinExist("ahk_id " GuiHwnd))
+	If (!Restart And !A_Args.Length() And WinExist("ahk_id " GuiHwnd))
 		WinWaitClose, ahk_id %GuiHwnd%
 	Else
 		Gui, Destroy
@@ -444,6 +463,9 @@ Exit() {
 		FileRemoveDir, LibreWolf-Extracted, 1
 	FileDelete, %A_ScriptFullPath%.pbak
 	FileDelete, %SelfUpdateZip%
+
+	If (Restart)
+		Run, % A_ScriptFullPath StrReplace(Args, "/Scheduled")
 	ExitApp
 }
 
@@ -462,7 +484,7 @@ Die(Error, Var = False, Show = True) {
 	Gui, Add, Text, x264 y-2 cYellow, % Chr("0x26A0")
 	Gui, Font, s9
 	Msg := Error " " (ChangesMade ? _ChangesMade : _NoChangesMade) "`n`n" _GoToWebsite
-	Gui, Add, Link, gAbout x15 y81 w290 cCCCCCC, %Msg%
+	Gui, Add, Link, gTrayAction x15 y81 w290 cCCCCCC, %Msg%
 	ShowGui()
 }
 
@@ -635,11 +657,12 @@ Progress(Msg, Ended = False) {
 }
 
 ShowGui() {
-	scheduledmode := WinExist("ahk_id " + GuiHwnd) ? "NA" : "Minimize"
-	Gui, Show, % "AutoSize" (IsPortable ? "" : scheduledmode)
-	If (!WinActive("ahk_id " + GuiHwnd))
+	Focus  := WinActive("ahk_id " + GuiHwnd) Or !Scheduled
+	NoFocus := WinExist("ahk_id " + GuiHwnd) ? "NA" : "Minimize"
+	Gui, Show, % "AutoSize" (Focus ? "" : NoFocus)
+	If (!Focus)
 		Gui, Flash
-	ControlFocus, VerField
+	ControlFocus, SysLink1
 	WinWaitClose, ahk_id %GuiHwnd%
 }
 
@@ -702,3 +725,8 @@ Unelevate(prms*) {
 	} Catch e
 		Die(_IsElevated)
 }
+
+~Esc::
+	If (WinActive("ahk_id " GuiHwnd) And (Progress >= 100 Or !Progress))	; Only when done or error
+		Send !{F4}
+	Return
