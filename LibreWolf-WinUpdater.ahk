@@ -1,5 +1,5 @@
 ; LibreWolf WinUpdater - https://codeberg.org/ltguillaume/librewolf-winupdater
-;@Ahk2Exe-SetFileVersion 1.7.5
+;@Ahk2Exe-SetFileVersion 1.7.6
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -97,7 +97,7 @@ Init() {
 	Menu, Tray, Add, Show, TrayAction
 	Menu, Tray, Add, Portable, TrayAction
 	Menu, Tray, Add, WinUpdater, TrayAction
-	Menu, Tray, Add, Exit, Exit
+	Menu, Tray, Add, Exit, TrayAction
 	Menu, Tray, Default, Show
 
 	; Set up GUI
@@ -123,17 +123,23 @@ Init() {
 }
 
 TrayAction(ItemName, GuiEvent, LinkIndex) {
-	If (LinkIndex = 1)
-		Return Restart()
-	If (LinkIndex = 2)
-		ItemName := "WinUpdater"
-	Else If (ItemName = "Show") {
+	If (ItemName = "Show") {
 		If (WinExist("ahk_id" GuiHwnd))
 		 	WinActivate
 		Else
 			Gui, Show
 		Return
+	} Else If (ItemName = "Exit") {
+		If (!Progress Or Progress >= 100)
+			GuiClose()
+		Else
+			Gui, Show
+		Return
 	}
+	If (LinkIndex = 1)
+		Return Restart()
+	If (LinkIndex = 2)
+		ItemName := "WinUpdater"
 
 	Url := "https://codeberg.org/ltguillaume/librewolf-" ItemName
 	Try Run, %Url%
@@ -363,7 +369,7 @@ VerifyChecksum() {
 			Progress(_Downloaded)
 			Gui, Add, Button, vUpdateButton gInstall w148 x86 y110 Default, %_StartUpdate%
 			GuiControl, Move, TaskSetField, y146
-			ShowGui()
+			GuiShow()
 		}
 	}
 }
@@ -485,7 +491,7 @@ Die(Error, Var = False, Show = True) {
 	Gui, Font, s9
 	Msg := Error " " (ChangesMade ? _ChangesMade : _NoChangesMade) "`n`n" _GoToWebsite
 	Gui, Add, Link, gTrayAction x15 y81 w290 cCCCCCC, %Msg%
-	ShowGui()
+	GuiShow()
 }
 
 Download(URL) {
@@ -537,8 +543,18 @@ GetLatestVersion() {
 }
 
 GuiClose() {
-	Gui, Destroy
+	Gui, %GuiHwnd%:Destroy
 	Exit()
+}
+
+GuiShow() {
+	Focus  := WinActive("ahk_id " + GuiHwnd) Or !Scheduled
+	NoFocus := WinExist("ahk_id " + GuiHwnd) ? "NA" : "Minimize"
+	Gui, Show, % "AutoSize" (Focus ? "" : NoFocus)
+	If (!Focus)
+		Gui, Flash
+	ControlFocus, SysLink1
+	WinWaitClose, ahk_id %GuiHwnd%
 }
 
 Hash(filePath, hashType = 4) {
@@ -656,16 +672,6 @@ Progress(Msg, Ended = False) {
 	Menu, Tray, Tip, %Msg%
 }
 
-ShowGui() {
-	Focus  := WinActive("ahk_id " + GuiHwnd) Or !Scheduled
-	NoFocus := WinExist("ahk_id " + GuiHwnd) ? "NA" : "Minimize"
-	Gui, Show, % "AutoSize" (Focus ? "" : NoFocus)
-	If (!Focus)
-		Gui, Flash
-	ControlFocus, SysLink1
-	WinWaitClose, ahk_id %GuiHwnd%
-}
-
 TaskCheck() {
 	RunWait schtasks.exe /query /tn "%_Updater% (%A_UserName%)",, Hide
 	GuiControl,, TaskSetField, % ErrorLevel = 0
@@ -692,7 +698,7 @@ TaskSet() {
 
 	If (SettingTask) {
 		SettingTask := 0
-		ShowGui()	; Don't start updating, just wait for close
+		GuiShow()	; Don't start updating, just wait for close
 	}
 }
 
@@ -727,6 +733,6 @@ Unelevate(prms*) {
 }
 
 ~Esc::
-	If (WinActive("ahk_id " GuiHwnd) And (Progress >= 100 Or !Progress))	; Only when done or error
-		Send !{F4}
+	If (WinActive("ahk_id " GuiHwnd) And (!Progress Or Progress >= 100))	; Only when error or done
+		GuiClose()
 	Return
