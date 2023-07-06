@@ -1,5 +1,5 @@
 ; LibreWolf WinUpdater - https://codeberg.org/ltguillaume/librewolf-winupdater
-;@Ahk2Exe-SetFileVersion 1.7.6
+;@Ahk2Exe-SetFileVersion 1.7.7
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -15,19 +15,19 @@
 #SingleInstance, Off
 
 Global Args       := ""
-, IniFile         := A_ScriptDir "\LibreWolf-WinUpdater.ini"
-, TaskCreateFile  := "ScheduledTask-Create.ps1"
-, TaskRemoveFile  := "ScheduledTask-Remove.ps1"
+, ExtractDir      := A_Temp "\LibreWolf-Extracted"
 , LibreWolfExe    := "librewolf.exe"
 , PortableExe     := A_ScriptDir "\LibreWolf-Portable.exe"
 , SelfUpdateZip   := "LibreWolf-WinUpdater.zip"
-, ExtractDir      := A_Temp "\LibreWolf-Extracted"
+, TaskCreateFile  := "ScheduledTask-Create.ps1"
+, TaskRemoveFile  := "ScheduledTask-Remove.ps1"
+, UpdaterFile     := "LibreWolf-WinUpdater.exe"
 , IsPortable      := FileExist(A_ScriptDir "\LibreWolf-Portable.exe")
 , RunningPortable := A_Args[1] = "/Portable"
 , Scheduled       := A_Args[1] = "/Scheduled"
 , SettingTask     := A_Args[1] = "/CreateTask" Or A_Args[1] = "/RemoveTask"
 , ChangesMade     := False
-, Path, ProgramW6432, Build, UpdateSelf, Task, CurrentUpdaterVersion, ReleaseInfo, CurrentVersion, NewVersion, SetupFile, GuiHwnd, LogField, Progress, VerField, TaskSetField, UpdateButton
+, IniFile, Path, ProgramW6432, Build, UpdateSelf, Task, CurrentUpdaterVersion, ReleaseInfo, CurrentVersion, NewVersion, SetupFile, GuiHwnd, LogField, Progress, VerField, TaskSetField, UpdateButton
 
 ; Strings
 Global _LibreWolf     := "LibreWolf"
@@ -88,6 +88,8 @@ Exit()
 
 Init() {
 	EnvGet, ProgramW6432, ProgramW6432
+	SplitPath, A_ScriptFullPath,,,, BaseName
+	IniFile := A_ScriptDir "\" BaseName ".ini"
 	IniRead, UpdateSelf, %IniFile%, Settings, UpdateSelf, 1	; Using "False" in .ini causes If (UpdateSelf) to be True
 	FileGetVersion, CurrentUpdaterVersion, %A_ScriptFullPath%
 	CurrentUpdaterVersion := SubStr(CurrentUpdaterVersion, 1, -2)
@@ -225,8 +227,11 @@ SelfUpdate() {
 		FileDelete, %A_ScriptDir%\%TaskRemoveFile%
 	}
 
-	If (!FileExist(A_ScriptFullPath))
+	If (!FileExist(A_ScriptDir "\" UpdaterFile))
 		Die(_ExtractionError)
+
+	If (A_ScriptName <> UpdaterFile)
+		FileMove, %A_ScriptDir%\%UpdaterFile%, %A_ScriptFullPath%
 
 	Run, %A_ScriptFullPath% %Args%
 	ExitApp
@@ -386,7 +391,7 @@ ExtractPortable() {
 		SetWorkingDir, %A_LoopFilePath%	; Enter the first folder of the extracted archive
 		Loop, Files, *, R
 		{
-			If (A_LoopFileName = "LibreWolf-WinUpdater.exe")
+			If (A_LoopFileName = UpdaterFile)
 				Continue
 			FileGetSize, CurrentFileSize, %A_ScriptDir%\%A_LoopFilePath%
 ;MsgBox, % A_LoopFilePath "`n" A_LoopFileSize "`n" CurrentFileSize "`n" Hash(A_LoopFilePath) "`n" Hash(A_ScriptDir "\" A_LoopFilePath)
