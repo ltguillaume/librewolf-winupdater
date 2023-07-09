@@ -1,5 +1,5 @@
 ; LibreWolf WinUpdater - https://codeberg.org/ltguillaume/librewolf-winupdater
-;@Ahk2Exe-SetFileVersion 1.7.7
+;@Ahk2Exe-SetFileVersion 1.7.8
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -27,12 +27,13 @@ Global Args       := ""
 , Scheduled       := A_Args[1] = "/Scheduled"
 , SettingTask     := A_Args[1] = "/CreateTask" Or A_Args[1] = "/RemoveTask"
 , ChangesMade     := False
-, IniFile, Path, ProgramW6432, Build, UpdateSelf, Task, CurrentUpdaterVersion, ReleaseInfo, CurrentVersion, NewVersion, SetupFile, GuiHwnd, LogField, Progress, VerField, TaskSetField, UpdateButton
+, Done            := False
+, IniFile, Path, ProgramW6432, Build, UpdateSelf, Task, CurrentUpdaterVersion, ReleaseInfo, CurrentVersion, NewVersion, SetupFile, GuiHwnd, LogField, ProgField, VerField, TaskSetField, UpdateButton
 
 ; Strings
 Global _LibreWolf     := "LibreWolf"
 , _Updater            := "LibreWolf WinUpdater"
-, _NoConnection       := "Could not establish a connection to GitLab."
+, _NoConnectionError  := "Could not establish a connection to GitLab."
 , _IsRunningError     := _Updater " is already running."
 , _IsElevated         := "To set up scheduled tasks properly, please do not run WinUpdater as administrator."
 , _NoDefaultBrowser   := "Could not open your default browser."
@@ -103,7 +104,7 @@ Init() {
 	Menu, Tray, Default, Show
 
 	; Set up GUI
-	Gui, New, +HwndGuiHwnd -MaximizeBox, %_Updater% %CurrentUpdaterVersion%
+	Gui, +HwndGuiHwnd -MaximizeBox
 	Gui, Color, 23222B
 	Gui, Add, Picture, x12 y10 w64 h64 Icon2, %A_ScriptFullPath%
 	Gui, Font, c00ACFF s22 w700, Segoe UI
@@ -111,9 +112,10 @@ Init() {
 	Gui, Font, cFFFFFF s9 w700
 	Gui, Add, Text, vVerField x86 y42 w222 BackgroundTrans
 	Gui, Font, w400
-	Gui, Add, Progress, vProgress w217 h20 c00ACFF, 10
+	Gui, Add, Progress, vProgField w217 h20 c00ACFF, 10
 	Gui, Add, Text, vLogField w222
 	Gui, Margin,, 15
+	Gui, Show, Hide, %_Updater% %CurrentUpdaterVersion%
 
 	If (SettingTask Or !A_Args.Length()) {	; No arguments: when not running as portable or as a scheduled task
 		If (!IsPortable And FileExist(A_ScriptDir "\" TaskCreateFile) And FileExist(A_ScriptDir "\" TaskRemoveFile)) {	; No scheduled tasks for portable version
@@ -132,7 +134,7 @@ TrayAction(ItemName, GuiEvent, LinkIndex) {
 			Gui, Show
 		Return
 	} Else If (ItemName = "Exit") {
-		If (!Progress Or Progress >= 100)
+		If (Done)
 			GuiClose()
 		Else
 			Gui, Show
@@ -286,7 +288,7 @@ GetCurrentVersion() {
 
 CheckConnection() {
 	If (!Download("https://gitlab.com/manifest.json"))
-		Die(_NoConnection,, False)	; Don't show this if not Scheduled
+		Die(_NoConnectionError,, False)	; Don't show this if not Scheduled
 }
 
 GetNewVersion() {
@@ -311,10 +313,9 @@ StartUpdate() {
 	WaitForClose()
 }
 
-WaitForClose() {
+WaitForClose(Notified := False) {
 	; Notify and wait if LibreWolf is running
 	PathDS   := StrReplace(Path, "\", "\\")
-	Notified := False
 	For Proc in ComObjGet("winmgmts:").ExecQuery("Select ProcessId from Win32_Process where ExecutablePath=""" PathDS """") {
 		If (!Notified) {
 			Progress(_NewVersionFound)
@@ -326,7 +327,7 @@ WaitForClose() {
 
 	; Check for newer version since notification was shown
 	If (GetNewVersion() And Notified)
-		WaitForClose()
+		WaitForClose(Notified)
 
 	DownloadUpdate()
 }
@@ -487,7 +488,7 @@ Die(Error, Var = False, Show = True) {
 		Error := StrReplace(Error, "{}", Var)
 	Error := StrReplace(Error, "{Task}", Task)
 	IniWrite, %Error%, %IniFile%, Log, LastResult
-	GuiControl, Hide, Progress
+	GuiControl, Hide, ProgField
 	GuiControl, Hide, LogField
 	GuiControl, Disable, TaskSetField
 	GuiControl, Hide, TaskSetField
@@ -496,7 +497,12 @@ Die(Error, Var = False, Show = True) {
 	Gui, Font, s9
 	Msg := Error " " (ChangesMade ? _ChangesMade : _NoChangesMade) "`n`n" _GoToWebsite
 	Gui, Add, Link, gTrayAction x15 y81 w290 cCCCCCC, %Msg%
-	GuiShow()
+
+	Done := True
+	If (Show)
+		GuiShow()
+	Else
+		Exit()
 }
 
 Download(URL) {
@@ -548,9 +554,16 @@ GetLatestVersion() {
 }
 
 GuiClose() {
-	Gui, %GuiHwnd%:Destroy
+	try {
+		Gui, Destroy
+	} catch {}
 	Exit()
 }
+
+GuiEscape:
+	If (Done)	; Only when error or done
+		GuiClose()
+Return
 
 GuiShow() {
 	Focus  := WinActive("ahk_id " + GuiHwnd) Or !Scheduled
@@ -662,19 +675,22 @@ Notify(Msg, Ver = 0, Delay = 0) {
 		Ver := NewVersion
 	Menu, Tray, Tip, %Msg%
 	If (Scheduled Or Delay) {
-		Gui, Destroy
+		Gui, Hide
 		TrayTip, %Msg%, v%Ver%,, 16
 		Sleep, %Delay%
 	}
 }
 
-Progress(Msg, Ended = False) {
+Progress(Msg, End = False) {
 	GuiControl,, LogField, % SubStr(Msg, InStr(Msg, "`n") + 1)
-	If (Ended)
-		GuiControl,, Progress, 100
+	If (End)
+		GuiControl,, ProgField, 100
 	Else
-		GuiControl,, Progress, +15
+		GuiControl,, ProgField, +15
 	Menu, Tray, Tip, %Msg%
+
+	GuiControlGet, Prog,, ProgField
+	Done := Prog >= 100
 }
 
 TaskCheck() {
@@ -736,8 +752,3 @@ Unelevate(prms*) {
 	} Catch e
 		Die(_IsElevated)
 }
-
-~Esc::
-	If (WinActive("ahk_id " GuiHwnd) And (!Progress Or Progress >= 100))	; Only when error or done
-		GuiClose()
-	Return
