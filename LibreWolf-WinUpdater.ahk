@@ -1,5 +1,5 @@
 ; LibreWolf WinUpdater - https://codeberg.org/ltguillaume/librewolf-winupdater
-;@Ahk2Exe-SetFileVersion 1.7.8
+;@Ahk2Exe-SetFileVersion 1.7.9
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -313,9 +313,10 @@ StartUpdate() {
 	WaitForClose()
 }
 
-WaitForClose(Notified := False) {
+WaitForClose() {
 	; Notify and wait if LibreWolf is running
 	PathDS   := StrReplace(Path, "\", "\\")
+	Wait:
 	For Proc in ComObjGet("winmgmts:").ExecQuery("Select ProcessId from Win32_Process where ExecutablePath=""" PathDS """") {
 		If (!Notified) {
 			Progress(_NewVersionFound)
@@ -323,11 +324,12 @@ WaitForClose(Notified := False) {
 			Notified := True
 		}
 		Process, WaitClose, % Proc.ProcessId
+		Goto, Wait
 	}
 
 	; Check for newer version since notification was shown
-	If (GetNewVersion() And Notified)
-		WaitForClose(Notified)
+	If (Notified And GetNewVersion())
+		WaitForClose()
 
 	DownloadUpdate()
 }
