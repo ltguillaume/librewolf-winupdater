@@ -1,5 +1,5 @@
 ; LibreWolf WinUpdater - https://codeberg.org/ltguillaume/librewolf-winupdater
-;@Ahk2Exe-SetFileVersion 1.7.9
+;@Ahk2Exe-SetFileVersion 1.7.10
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -38,7 +38,9 @@ Global _LibreWolf     := "LibreWolf"
 , _IsElevated         := "To set up scheduled tasks properly, please do not run WinUpdater as administrator."
 , _NoDefaultBrowser   := "Could not open your default browser."
 , _Checking           := "Checking for new version..."
-, _TaskSet            := "Schedule a task for automatic update checks while`nuser {} is logged on."
+, _SetTask            := "Schedule a task for automatic update checks while`nuser {} is logged on."
+, _SettingTask        := (A_Args[1] = "/CreateTask" ? "Creating" : "Removing") " scheduled task..."
+, _Done               := " Done."
 , _GetPathError       := "Could not find the path to LibreWolf.`nBrowse to " LibreWolfExe " in the following dialog."
 , _SelectFileTitle    := _Updater " - Select " LibreWolfExe "..."
 , _WritePermError     := "Could not write to`n{}. Please check the current user account's write permissions for this folder."
@@ -119,25 +121,25 @@ Init() {
 
 	If (SettingTask Or !A_Args.Length()) {	; No arguments: when not running as portable or as a scheduled task
 		If (!IsPortable And FileExist(A_ScriptDir "\" TaskCreateFile) And FileExist(A_ScriptDir "\" TaskRemoveFile)) {	; No scheduled tasks for portable version
-			Gui, Add, CheckBox, vTaskSetField gTaskSet x15 y+10 w290 cBCBCBC Center Check3 -Tabstop, % StrReplace(_TaskSet, "{}", A_UserName)
+			Gui, Add, CheckBox, vTaskSetField gTaskSet x15 y+10 w290 cBCBCBC Center Check3 -Tabstop, % StrReplace(_SetTask, "{}", A_UserName)
 			TaskCheck()
 		}
-		Gui, Show
+		GuiShow()
 	}
 }
 
 TrayAction(ItemName, GuiEvent, LinkIndex) {
 	If (ItemName = "Show") {
-		If (WinExist("ahk_id" GuiHwnd))
+		If (WinExist("ahk_id " GuiHwnd))
 		 	WinActivate
 		Else
-			Gui, Show
+			GuiShow()
 		Return
 	} Else If (ItemName = "Exit") {
 		If (Done)
 			GuiClose()
 		Else
-			Gui, Show
+			GuiShow()
 		Return
 	}
 	If (LinkIndex = 1)
@@ -244,13 +246,14 @@ CheckWriteAccess() {
 	If (!ErrorLevel)
 		Return
 
-	If (IsPortable)
+	AppData := A_AppData "\LibreWolf\WinUpdater"
+
+	If (IsPortable Or A_ScriptDir = AppData)
 		Die(_WritePermError, A_ScriptDir)
 
-	AppData := A_AppData "\LibreWolf\WinUpdater"
 	FileCreateDir, %AppData%
 	If (ErrorLevel)
-		Die(_WritePermError, A_ScriptDir)
+		Die(_WritePermError, AppData)
 
 	Files := [ A_ScriptName, TaskCreateFile, TaskRemoveFile ]
 	For Index, File in Files {
@@ -308,7 +311,7 @@ GetNewVersion() {
 StartUpdate() {
 	GuiControl,, VerField, %CurrentVersion% %_To% %NewVersion% (%Build%)
 	If (Portable Or !Scheduled)
-		Gui, Show
+		GuiShow()
 
 	WaitForClose()
 }
@@ -377,7 +380,7 @@ VerifyChecksum() {
 			Progress(_Downloaded)
 			Gui, Add, Button, vUpdateButton gInstall w148 x86 y110 Default, %_StartUpdate%
 			GuiControl, Move, TaskSetField, y146
-			GuiShow()
+			GuiShow(True)	; Wait for user action
 		}
 	}
 }
@@ -502,7 +505,7 @@ Die(Error, Var = False, Show = True) {
 
 	Done := True
 	If (Show)
-		GuiShow()
+		GuiShow(True)	; Wait for user action
 	Else
 		Exit()
 }
@@ -567,14 +570,15 @@ GuiEscape:
 		GuiClose()
 Return
 
-GuiShow() {
-	Focus  := WinActive("ahk_id " + GuiHwnd) Or !Scheduled
-	NoFocus := WinExist("ahk_id " + GuiHwnd) ? "NA" : "Minimize"
-	Gui, Show, % "AutoSize" (Focus ? "" : NoFocus)
+GuiShow(Wait = False) {
+	Focus  := WinActive("ahk_id " GuiHwnd) Or !Scheduled
+	NoFocus := WinExist("ahk_id " GuiHwnd) ? "NA" : "Minimize"
+	Gui, Show, % "AutoSize " (Focus ? "" : NoFocus)
 	If (!Focus)
 		Gui, Flash
 	ControlFocus, SysLink1
-	WinWaitClose, ahk_id %GuiHwnd%
+	If (Wait)
+		WinWaitClose, ahk_id %GuiHwnd%
 }
 
 Hash(filePath, hashType = 4) {
@@ -703,7 +707,7 @@ TaskCheck() {
 
 TaskSet() {
 	If (SettingTask) {
-		Progress("")
+		Progress(_SettingTask)
 		If (A_Args[1] = "/CreateTask")
 			TaskSetField := 0
 		Else If (A_Args[1] = "/RemoveTask")
@@ -721,7 +725,8 @@ TaskSet() {
 
 	If (SettingTask) {
 		SettingTask := 0
-		GuiShow()	; Don't start updating, just wait for close
+		Progress(_SettingTask _Done, True)
+		GuiShow(True)	; Don't start updating, just wait for close
 	}
 }
 
