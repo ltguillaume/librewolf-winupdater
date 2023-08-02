@@ -130,10 +130,10 @@ Init() {
 
 TrayAction(ItemName, GuiEvent, LinkIndex) {
 	If (ItemName = "Show") {
-		If (WinExist("ahk_id " GuiHwnd))
-		 	WinActivate
-		Else
+		If (!WinExist("ahk_id " GuiHwnd))
 			GuiShow()
+		WinWait, ahk_id %GuiHwnd%
+		WinActivate
 		Return
 	} Else If (ItemName = "Exit") {
 		If (Done)
