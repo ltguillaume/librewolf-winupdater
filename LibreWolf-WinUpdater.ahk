@@ -163,10 +163,11 @@ CheckPaths() {
 		Path := A_ScriptDir "\LibreWolf\librewolf.exe"
 	Else {
 		IniRead, Path, %IniFile%, Settings, Path, 0	; Need to use 0, because False would become a string
-		If (!Path)
+		If (!Path) {
 			RegRead, Path, HKLM\SOFTWARE\Clients\StartMenuInternet\LibreWolf\shell\open\command
-		If (ErrorLevel)
-			Path = %ProgramW6432%\LibreWolf\%LibreWolfExe%
+			If (ErrorLevel)
+				Path = %ProgramW6432%\LibreWolf\%LibreWolfExe%
+		}
 
 		Path := Trim(Path, """")	; FileExist chokes on double quotes
 		If (!FileExist(Path))
@@ -179,7 +180,7 @@ CheckPaths() {
 		MsgBox, 48, %_Updater%, %_GetPathError%
 		FileSelectFile, Path, 3, %Path%, %_SelectFileTitle%, %LibreWolfExe%
 		If (ErrorLevel)
-			Exit()
+			ExitApp
 		Else {
 			IniWrite, %Path%, %IniFile%, Settings, Path
 			Goto, CheckPath
