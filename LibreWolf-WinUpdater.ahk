@@ -421,6 +421,7 @@ ExtractPortable() {
 }
 
 Install() {
+	GuiControl, Disable, UpdateButton
 	Progress(_Installing)
 	If (Scheduled)
 		Notify(_Installing, CurrentVersion " " _To " v" NewVersion, 3000)
