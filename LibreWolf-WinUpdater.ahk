@@ -1,12 +1,15 @@
 ; LibreWolf WinUpdater - https://codeberg.org/ltguillaume/librewolf-winupdater
-;@Ahk2Exe-SetFileVersion 1.7.11
+;@Ahk2Exe-SetFileVersion 1.8.1
+;@Ahk2Exe-SetProductVersion 1.8.1
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
+;@Ahk2Exe-SetCopyright ltguillaume
 ;@Ahk2Exe-SetDescription LibreWolf WinUpdater
 ;@Ahk2Exe-SetMainIcon LibreWolf-WinUpdater.ico
 ;@Ahk2Exe-AddResource LibreWolf-WinUpdaterBlue.ico, 160
 ;@Ahk2Exe-SetOrigFilename LibreWolf-WinUpdater.exe
+;@Ahk2Exe-SetProductName LibreWolf WinUpdater
 ;@Ahk2Exe-PostExec ResourceHacker.exe -open "%A_WorkFileName%" -save "%A_WorkFileName%" -action delete -mask ICONGROUP`,206`, ,,,,1
 ;@Ahk2Exe-PostExec ResourceHacker.exe -open "%A_WorkFileName%" -save "%A_WorkFileName%" -action delete -mask ICONGROUP`,207`, ,,,,1
 ;@Ahk2Exe-PostExec ResourceHacker.exe -open "%A_WorkFileName%" -save "%A_WorkFileName%" -action delete -mask ICONGROUP`,208`, ,,,,1
@@ -15,14 +18,19 @@
 #SingleInstance, Off
 
 Global Args       := ""
-, ExtractDir      := A_Temp "\LibreWolf-Extracted"
-, LibreWolfExe    := "librewolf.exe"
-, PortableExe     := A_ScriptDir "\LibreWolf-Portable.exe"
-, SelfUpdateZip   := "LibreWolf-WinUpdater.zip"
+, Browser         := "LibreWolf"
+, ExtractDir      := A_Temp "\" Browser "-Extracted"
+, BrowserExe      := "librewolf.exe"
+, BrowserPortable := "LibreWolf\" BrowserExe
+, PortableExe     := A_ScriptDir "\" Browser "-Portable.exe"
+, ConnectCheckUrl := "https://gitlab.com/manifest.json"
+, ReleaseApiUrl   := "https://gitlab.com/api/v4/projects/44042130/releases/permalink/latest"
+, SelfUpdateZip   := Browser "-WinUpdater.zip"
+, SetupParams     := "/D={}"
 , TaskCreateFile  := "ScheduledTask-Create.ps1"
 , TaskRemoveFile  := "ScheduledTask-Remove.ps1"
-, UpdaterFile     := "LibreWolf-WinUpdater.exe"
-, IsPortable      := FileExist(A_ScriptDir "\LibreWolf-Portable.exe")
+, UpdaterFile     := Browser "-WinUpdater.exe"
+, IsPortable      := FileExist(A_ScriptDir "\" Browser "-Portable.exe")
 , RunningPortable := A_Args[1] = "/Portable"
 , Scheduled       := A_Args[1] = "/Scheduled"
 , SettingTask     := A_Args[1] = "/CreateTask" Or A_Args[1] = "/RemoveTask"
@@ -31,9 +39,8 @@ Global Args       := ""
 , IniFile, Path, ProgramW6432, Build, UpdateSelf, Task, CurrentUpdaterVersion, ReleaseInfo, CurrentVersion, NewVersion, SetupFile, GuiHwnd, LogField, ProgField, VerField, TaskSetField, UpdateButton
 
 ; Strings
-Global _LibreWolf     := "LibreWolf"
-, _Updater            := "LibreWolf WinUpdater"
-, _NoConnectionError  := "Could not establish a connection to GitLab."
+Global _Updater       := Browser " WinUpdater"
+, _NoConnectionError  := "Could not connect to " SubStr(ConnectCheckUrl, 1, InStr(ConnectCheckUrl, "/",,, 3) - 1) "."
 , _IsRunningError     := _Updater " is already running."
 , _IsElevated         := "To set up scheduled tasks properly, please do not run WinUpdater as administrator."
 , _NoDefaultBrowser   := "Could not open your default browser."
@@ -41,11 +48,11 @@ Global _LibreWolf     := "LibreWolf"
 , _SetTask            := "Schedule a task for automatic update checks while`nuser {} is logged on."
 , _SettingTask        := (A_Args[1] = "/CreateTask" ? "Creating" : "Removing") " scheduled task..."
 , _Done               := " Done."
-, _GetPathError       := "Could not find the path to LibreWolf.`nBrowse to " LibreWolfExe " in the following dialog."
-, _SelectFileTitle    := _Updater " - Select " LibreWolfExe "..."
+, _GetPathError       := "Could not find the path to " Browser ".`nBrowse to " BrowserExe " in the following dialog."
+, _SelectFileTitle    := _Updater " - Select " BrowserExe "..."
 , _WritePermError     := "Could not write to`n{}. Please check the current user account's write permissions for this folder."
 , _CopyError          := "Could not copy {}"
-, _GetBuildError      := "Could not determine the build architecture (32/64-bit) of LibreWolf."
+, _GetBuildError      := "Could not determine the build type of " Browser "."
 , _GetVersionError    := "Could not determine the current version of`n{}"
 , _DownloadJsonError  := "Could not download the {Task} releases file."
 , _JsonVersionError   := "Could not get version info from the {Task} releases file."
@@ -58,27 +65,27 @@ Global _LibreWolf     := "LibreWolf"
 , _FindChecksumError  := "Could not find the checksum for the downloaded file."
 , _ChecksumMatchError := "The file checksum did not match, so it's possible the download failed."
 , _ChangesMade        := "However, new files were written to the target folder!"
-, _NoChangesMade      := "No changes were made to your LibreWolf folder."
+, _NoChangesMade      := "No changes were made to your " Browser " folder."
 , _Extracting         := "Extracting portable version..."
 , _StartUpdate        := "  &Start update  "
 , _Installing         := "Installing new version..."
 , _UpdateError        := "Error while updating."
 , _SilentUpdateError  := "Silent update did not complete.`nDo you want to run the interactive installer?"
-, _NewVersionFound    := "A new version is available.`nClose LibreWolf to start updating..."
+, _NewVersionFound    := "A new version is available.`nClose " Browser " to start updating..."
 , _NoNewVersion       := "No new version found."
-, _ExtractionError    := "Could not extract the {Task} archive.`nMake sure LibreWolf is not running and restart the updater."
+, _ExtractionError    := "Could not extract the {Task} archive.`nMake sure " Browser " is not running and restart the updater."
 , _MoveToTargetError  := "Could not move the following file into the target folder:`n{}"
-, _IsUpdated          := "LibreWolf has been updated."
+, _IsUpdated          := Browser " has been updated."
 , _To                 := "to"
 , _GoToWebsite        := "<a>Restart WinUpdater</a> or visit the <a>project website</a> for help."
 
 Init()
-CheckPaths()
 CheckArgs()
+CheckPaths()
 GetCurrentVersion()
 If (ThisUpdaterRunning())
-	Die(_IsRunningError,, False)	; Don't show this if Scheduled
-Unelevate(A_ScriptFullPath, "/Restart " Args, A_ScriptDir)
+	Die(_IsRunningError,, !Scheduled)	; Show only if not scheduled
+Unelevate()
 CheckWriteAccess()
 If (SettingTask)
 	TaskSet()
@@ -90,12 +97,12 @@ If (GetNewVersion())
 Exit()
 
 Init() {
+	FileGetVersion, CurrentUpdaterVersion, %A_ScriptFullPath%
+	CurrentUpdaterVersion := SubStr(CurrentUpdaterVersion, 1, -2)
 	EnvGet, ProgramW6432, ProgramW6432
 	SplitPath, A_ScriptFullPath,,,, BaseName
 	IniFile := A_ScriptDir "\" BaseName ".ini"
 	IniRead, UpdateSelf, %IniFile%, Settings, UpdateSelf, 1	; Using "False" in .ini causes If (UpdateSelf) to be True
-	FileGetVersion, CurrentUpdaterVersion, %A_ScriptFullPath%
-	CurrentUpdaterVersion := SubStr(CurrentUpdaterVersion, 1, -2)
 	SetWorkingDir, %A_Temp%
 	Menu, Tray, Tip, %_Updater% %CurrentUpdaterVersion%
 	Menu, Tray, NoStandard
@@ -110,7 +117,7 @@ Init() {
 	Gui, Color, 23222B
 	Gui, Add, Picture, x12 y10 w64 h64 Icon2, %A_ScriptFullPath%
 	Gui, Font, c00ACFF s22 w700, Segoe UI
-	Gui, Add, Text, x85 y4 BackgroundTrans, LibreWolf
+	Gui, Add, Text, x85 y4 BackgroundTrans, %Browser%
 	Gui, Font, cFFFFFF s9 w700
 	Gui, Add, Text, vVerField x86 y42 w222 BackgroundTrans
 	Gui, Font, w400
@@ -147,7 +154,7 @@ TrayAction(ItemName, GuiEvent, LinkIndex) {
 	If (LinkIndex = 2)
 		ItemName := "WinUpdater"
 
-	Url := "https://codeberg.org/ltguillaume/librewolf-" ItemName
+	Url := "https://codeberg.org/ltguillaume/" Browser "-" ItemName
 	Try Run, %Url%
 	Catch {
 		RegRead, DefBrowser, HKCR, .html
@@ -158,36 +165,6 @@ TrayAction(ItemName, GuiEvent, LinkIndex) {
 	}
 }
 
-CheckPaths() {
-	If (IsPortable)
-		Path := A_ScriptDir "\LibreWolf\librewolf.exe"
-	Else {
-		IniRead, Path, %IniFile%, Settings, Path, 0	; Need to use 0, because False would become a string
-		If (!Path) {
-			RegRead, Path, HKLM\SOFTWARE\Clients\StartMenuInternet\LibreWolf\shell\open\command
-			If (ErrorLevel)
-				Path = %ProgramW6432%\LibreWolf\%LibreWolfExe%
-		}
-
-		Path := Trim(Path, """")	; FileExist chokes on double quotes
-		If (!FileExist(Path))
-			Path = %A_ProgramFiles%\LibreWolf\%LibreWolfExe%
-	}
-;MsgBox, Path = %Path%
-
-	CheckPath:
-	If (!FileExist(Path)) {
-		MsgBox, 48, %_Updater%, %_GetPathError%
-		FileSelectFile, Path, 3, %Path%, %_SelectFileTitle%, %LibreWolfExe%
-		If (ErrorLevel)
-			ExitApp
-		Else {
-			IniWrite, %Path%, %IniFile%, Settings, Path
-			Goto, CheckPath
-		}
-	}
-}
-
 CheckArgs() {
 	Args := ""
 	For i, Arg in A_Args
@@ -195,6 +172,36 @@ CheckArgs() {
 		If (InStr(Arg, A_Space))
 			Arg := """" Arg """"
 		Args .= " " Arg
+	}
+}
+
+CheckPaths() {
+	If (IsPortable)
+		Path := A_ScriptDir "\" BrowserPortable
+	Else {
+		IniRead, Path, %IniFile%, Settings, Path, 0	; Need to use 0, because False would become a string
+		If (!Path) {
+			RegRead, Path, HKLM\SOFTWARE\Clients\StartMenuInternet\%Browser%\shell\open\command
+			If (ErrorLevel)
+				Path = %ProgramW6432%\%Browser%\%BrowserExe%
+		}
+
+		Path := Trim(Path, """")	; FileExist chokes on double quotes
+		If (!FileExist(Path))
+			Path = %A_ProgramFiles%\%Browser%\%BrowserExe%
+	}
+;MsgBox, Path = %Path%`nSetupParams = %SetupParams%
+
+	CheckPath:
+	If (!FileExist(Path)) {
+		MsgBox, 48, %_Updater%, %_GetPathError%
+		FileSelectFile, Path, 3, %Path%, %_SelectFileTitle%, %BrowserExe%
+		If (ErrorLevel)
+			ExitApp
+		Else {
+			IniWrite, %Path%, %IniFile%, Settings, Path
+			Goto, CheckPath
+		}
 	}
 }
 
@@ -211,11 +218,11 @@ ThisUpdaterRunning() {
 
 SelfUpdate() {
 	Task := _Updater
-;MsgBox, % GetLatestVersion() " = " CurrentUpdaterVersion
-	If (GetLatestVersion() = CurrentUpdaterVersion)
+;MsgBox, % GetLatestVersion() " > " CurrentUpdaterVersion
+	If (!VerCompare(GetLatestVersion(), ">" CurrentUpdaterVersion))
 		Return
 
-	RegExMatch(ReleaseInfo, "i)name"":""librewolf-winupdater.+?\.zip"".*?browser_download_url"":""(.*?)""", DownloadUrl)
+	RegExMatch(ReleaseInfo, "i)name"":""" Browser "-WinUpdater.+?\.zip"".*?browser_download_url"":""(.*?)""", DownloadUrl)
 	If (!DownloadUrl1)
 		Return Log("SelfUpdate", _FindUrlError, True)
 
@@ -243,13 +250,13 @@ SelfUpdate() {
 }
 
 CheckWriteAccess() {
-	If (!FileExist(A_ScriptDir "\" LibreWolfExe)) {
+	If (!FileExist(A_ScriptDir "\" BrowserExe)) {
 		FileAppend,, %IniFile%
 		If (!ErrorLevel)
 			Return
 	}
 
-	AppData := A_AppData "\LibreWolf\WinUpdater"
+	AppData := A_AppData "\" Browser "\WinUpdater"
 
 	If (IsPortable Or A_ScriptDir = AppData)
 		Die(_WritePermError, A_ScriptDir)
@@ -271,15 +278,6 @@ CheckWriteAccess() {
 }
 
 GetCurrentVersion() {
-	; by SKAN and Drugwash https://www.autohotkey.com/board/topic/70777-how-to-get-autohotkeyexe-build-information-from-file/?p=448263
-	Call := DllCall("GetBinaryTypeW", "Str", "\\?\" Path, "UInt *", Build)
-	If (Call And Build = 6)
-		Build := "x86_64"
-	Else If (Call And Build = 0)
-		Build := "i686"
-	Else
-		Die(_GetBuildError)
-
 	; FileVersion() by SKAN https://www.autohotkey.com/boards/viewtopic.php?&t=4282
 	If (Sz := DllCall("Version\GetFileVersionInfoSizeW", "WStr", Path, "Int", 0))
 		If (DllCall("Version\GetFileVersionInfoW", "WStr", Path, "Int", 0, "UInt", VarSetCapacity(V, Sz), "Str", V))
@@ -289,17 +287,30 @@ GetCurrentVersion() {
 	If (!CurrentVersion)
 		Die(_GetVersionError, Path)
 
+	GetCurrentBuild()
+
 	GuiControl,, VerField, %CurrentVersion% (%Build%)
 }
 
+GetCurrentBuild() {
+	; by SKAN and Drugwash https://www.autohotkey.com/board/topic/70777-how-to-get-autohotkeyexe-build-information-from-file/?p=448263
+	Call := DllCall("GetBinaryTypeW", "Str", "\\?\" Path, "UInt *", Build)
+	If (Call And Build = 6)
+		Build := "x86_64"
+	Else If (Call And Build = 0)
+		Build := "i686"
+	Else
+		Die(_GetBuildError)
+}
+
 CheckConnection() {
-	If (!Download("https://gitlab.com/manifest.json"))
-		Die(_NoConnectionError,, False)	; Don't show this if not Scheduled
+	If (!Download(ConnectCheckUrl))
+		Die(_NoConnectionError,, !Scheduled)	; Show only if not scheduled
 }
 
 GetNewVersion() {
 	Progress(_Checking)
-	Task := _LibreWolf
+	Task := Browser
 	NewVersion := GetLatestVersion()
 ;MsgBox, ReleaseInfo = %ReleaseInfo%`nCurrentVersion = %CurrentVersion%`nNewVersion = %NewVersion%
 	IniRead, LastUpdateTo, %IniFile%, Log, LastUpdateTo, False
@@ -320,7 +331,7 @@ StartUpdate() {
 }
 
 WaitForClose() {
-	; Notify and wait if LibreWolf is running
+	; Notify and wait if browser is running
 	PathDS   := StrReplace(Path, "\", "\\")
 	Wait:
 	For Proc in ComObjGet("winmgmts:").ExecQuery("Select ProcessId from Win32_Process where ExecutablePath=""" PathDS """") {
@@ -343,7 +354,7 @@ WaitForClose() {
 DownloadUpdate() {
 	; Get setup file URL
 	FilenameEnd := Build (IsPortable ? "-portable\.zip" : "-setup\.exe")
-	RegExMatch(ReleaseInfo, "i)""name"":""(librewolf-.{1,30}?" FilenameEnd ")"",\s*""url"":""(.+?)""", DownloadUrl)
+	RegExMatch(ReleaseInfo, "i)""name"":""(" Browser "-.{1,30}?" FilenameEnd ")"",\s*""url"":""(.+?)""", DownloadUrl)
 ;MsgBox, Downloading`n%DownloadUrl2%`nto`n%DownloadUrl1%
 	If (!DownloadUrl1 Or !DownloadUrl2)
 		Die(_FindUrlError)
@@ -425,10 +436,11 @@ Install() {
 	Progress(_Installing)
 	If (Scheduled)
 		Notify(_Installing, CurrentVersion " " _To " v" NewVersion, 3000)
-	Folder := StrReplace(Path, LibreWolfExe, "")
-;MsgBox, %SetupFile% /S /D=%Folder%
+	Folder := StrReplace(Path, BrowserExe, "")
+	SetupParams := StrReplace(SetupParams, "{}", Folder)
+;MsgBox, %SetupFile% %SetupParams%
 	; Run silent setup
-	RunWait, %SetupFile% /S /D=%Folder%,, UseErrorLevel
+	RunWait, %SetupFile% %SetupParams% /S,, UseErrorLevel
 	If (!ErrorLevel)
 		WriteReport()
 	Else {
@@ -436,9 +448,9 @@ Install() {
 		IfMsgBox No
 			Progress(_UpdateError, True)
 		Else {
-			RunWait, %SetupFile% /D=%Folder%,, UseErrorLevel
+			RunWait, %SetupFile% %SetupParams%,, UseErrorLevel
 			If (ErrorLevel)
-				Progress(_UpdateError, True)
+				Die(_UpdateError (ErrorLevel ? " " A_LastError : ""))
 			Else
 				WriteReport()
 		}
@@ -481,7 +493,7 @@ Exit(Restart = False) {
 		FileDelete, %SetupFile%
 	}
 	If (IsPortable)
-		FileRemoveDir, LibreWolf-Extracted, 1
+		FileRemoveDir, %ExtractDir%, 1
 	FileDelete, %A_ScriptFullPath%.pbak
 	FileDelete, %SelfUpdateZip%
 
@@ -547,9 +559,7 @@ Extract(From, To) {
 }
 
 GetLatestVersion() {
-	ReleaseUrl := (Task = _Updater
-		? "https://codeberg.org/api/v1/repos/ltguillaume/librewolf-winupdater/releases/latest"
-		: "https://gitlab.com/api/v4/projects/44042130/releases/permalink/latest")
+	ReleaseUrl := (Task = _Updater ? "https://codeberg.org/api/v1/repos/ltguillaume/" Browser "-winupdater/releases/latest" : ReleaseApiUrl)
 	ReleaseInfo := Download(ReleaseUrl)
 	If (!ReleaseInfo)
 		Die(_DownloadJsonError)
@@ -685,7 +695,6 @@ Notify(Msg, Ver = 0, Delay = 0) {
 		Ver := NewVersion
 	Menu, Tray, Tip, %Msg%
 	If (Scheduled Or Delay) {
-		Gui, Hide
 		TrayTip, %Msg%, v%Ver%,, 16
 		Sleep, %Delay%
 	}
@@ -734,10 +743,17 @@ TaskSet() {
 	}
 }
 
-Unelevate(Prms*) {
-	If (!A_IsAdmin Or IsPortable Or Scheduled Or RegExMatch(DllCall("GetCommandLine", "str"), " /Restart(?!\S)"))
+Unelevate(Forced = False) {
+	If (!A_IsAdmin Or IsPortable Or (Scheduled And !Forced) Or RegExMatch(DllCall("GetCommandLine", "str"), " /Restart(?!\S)"))
 		Return
 
+	If (RunUnelevated(A_ScriptFullPath, "/Restart " Args, A_ScriptDir))
+		ExitApp
+	Else
+		Die(_IsElevated)
+}
+
+RunUnelevated(Prms*) {
 	; ShellRun(Prms*) from AutoHotkey's Installer.ahk
 	Try {
 		ShellWindows := ComObjCreate("Shell.Application").Windows
@@ -759,7 +775,7 @@ Unelevate(Prms*) {
 				}
 				ObjRelease(Ptlb)
 		}
-		ExitApp
+		Return True
 	} Catch e
-		Die(_IsElevated)
+		Return False
 }

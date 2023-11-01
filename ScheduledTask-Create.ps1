@@ -11,7 +11,7 @@ If (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
   Exit
 }
 
-$Action   = New-ScheduledTaskAction -Execute "$PSScriptRoot\LibreWolf-WinUpdater.exe" -Argument "/Scheduled"
+$Action   = New-ScheduledTaskAction -Execute "LibreWolf-WinUpdater.exe" -Argument "/Scheduled" -WorkingDirectory "$PSScriptRoot"
 $Settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -RunOnlyIfNetworkAvailable
 $4Hours   = New-ScheduledTaskTrigger -Once -At (Get-Date -Minute 0 -Second 0).AddHours(1) -RepetitionInterval (New-TimeSpan -Hours 4)
 $AtLogon  = New-ScheduledTaskTrigger -AtLogOn
