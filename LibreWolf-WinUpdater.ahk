@@ -1,6 +1,6 @@
 ; LibreWolf WinUpdater - https://codeberg.org/ltguillaume/librewolf-winupdater
-;@Ahk2Exe-SetFileVersion 1.8.1
-;@Ahk2Exe-SetProductVersion 1.8.1
+;@Ahk2Exe-SetFileVersion 1.8.2
+;@Ahk2Exe-SetProductVersion 1.8.2
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -36,7 +36,7 @@ Global Args       := ""
 , SettingTask     := A_Args[1] = "/CreateTask" Or A_Args[1] = "/RemoveTask"
 , ChangesMade     := False
 , Done            := False
-, IniFile, Path, ProgramW6432, Build, UpdateSelf, Task, CurrentUpdaterVersion, ReleaseInfo, CurrentVersion, NewVersion, SetupFile, GuiHwnd, LogField, ProgField, VerField, TaskSetField, UpdateButton
+, IniFile, Path, ProgramW6432, Build, UpdateSelf, Task, CurrentUpdaterVersion, ReleaseInfo, CurrentVersion, NewVersion, SetupFile, IsDownloaded, GuiHwnd, LogField, ProgField, VerField, TaskSetField, UpdateButton
 
 ; Strings
 Global _Updater       := Browser " WinUpdater"
@@ -192,6 +192,9 @@ CheckPaths() {
 	}
 ;MsgBox, Path = %Path%`nSetupParams = %SetupParams%
 
+	If (!FileExist(Path) And FileExist(Path ".wubak"))
+		FileMove, %Path%.wubak, %Path%
+
 	CheckPath:
 	If (!FileExist(Path)) {
 		MsgBox, 48, %_Updater%, %_GetPathError%
@@ -230,7 +233,7 @@ SelfUpdate() {
 	If (!FileExist(SelfUpdateZip))
 		Return Log("SelfUpdate", _DownloadSelfError, True)
 ;MsgBox, Extracting Self-Update
-	FileMove, %A_ScriptFullPath%, %A_ScriptFullPath%.pbak, 1
+	FileMove, %A_ScriptFullPath%, %A_ScriptFullPath%.wubak, 1
 	If (!Extract(A_Temp "\" SelfUpdateZip, A_ScriptDir))
 		Return Log("SelfUpdate", _ExtractionError, True)
 
@@ -348,7 +351,10 @@ WaitForClose() {
 	If (Notified And GetNewVersion())
 		WaitForClose()
 
-	DownloadUpdate()
+	If (!IsDownloaded Or !FileExist(SetupFile))
+		DownloadUpdate()
+	Else
+		VerifyChecksum()
 }
 
 DownloadUpdate() {
@@ -385,6 +391,8 @@ VerifyChecksum() {
 	If (Checksum1 <> Hash(SetupFile))
 		Die(_ChecksumMatchError)
 
+	IsDownloaded := True
+
 	If (IsPortable)
 		ExtractPortable()
 	Else {
@@ -400,6 +408,8 @@ VerifyChecksum() {
 }
 
 ExtractPortable() {
+	WaitForClose()
+	PreventRunningWhileUpdating()
 ; Extract archive of portable version
 	Progress(_Extracting)
 	If (!Extract(A_Temp "\" SetupFile, ExtractDir))
@@ -433,6 +443,8 @@ ExtractPortable() {
 
 Install() {
 	GuiControl, Disable, UpdateButton
+	WaitForClose()
+	PreventRunningWhileUpdating()
 	Progress(_Installing)
 	If (Scheduled)
 		Notify(_Installing, CurrentVersion " " _To " v" NewVersion, 3000)
@@ -455,6 +467,11 @@ Install() {
 				WriteReport()
 		}
 	}
+}
+
+PreventRunningWhileUpdating() {
+	If (A_IsAdmin Or IsPortable)
+		FileMove, %Path%, %Path%.wubak, 1
 }
 
 WriteReport() {
@@ -494,8 +511,14 @@ Exit(Restart = False) {
 	}
 	If (IsPortable)
 		FileRemoveDir, %ExtractDir%, 1
-	FileDelete, %A_ScriptFullPath%.pbak
+	FileDelete, %A_ScriptFullPath%.wubak
 	FileDelete, %SelfUpdateZip%
+	If (FileExist(Path ".wubak")) {
+		If (FileExist(Path))
+			FileDelete, %Path%.wubak
+		Else
+			FileMove, %Path%.wubak, %Path%
+	}
 
 	If (Restart)
 		Run, % A_ScriptFullPath StrReplace(Args, "/Scheduled")
@@ -508,7 +531,7 @@ Die(Error, Var = False, Show = True) {
 	If (Var)
 		Error := StrReplace(Error, "{}", Var)
 	Error := StrReplace(Error, "{Task}", Task)
-	IniWrite, %Error%, %IniFile%, Log, LastResult
+	Log("LastResult", Error)
 	GuiControl, Hide, ProgField
 	GuiControl, Hide, LogField
 	GuiControl, Disable, TaskSetField
@@ -561,8 +584,12 @@ Extract(From, To) {
 GetLatestVersion() {
 	ReleaseUrl := (Task = _Updater ? "https://codeberg.org/api/v1/repos/ltguillaume/" Browser "-winupdater/releases/latest" : ReleaseApiUrl)
 	ReleaseInfo := Download(ReleaseUrl)
-	If (!ReleaseInfo)
-		Die(_DownloadJsonError)
+	If (!ReleaseInfo) {
+		If (Task = _Updater)
+			Return CurrentUpdaterVersion
+		Else
+			Die(_DownloadJsonError)
+	}
 
 	RegExMatch(ReleaseInfo, "i)tag_name"":""v?(.+?)""", Release)
 	LatestVersion := Release1
@@ -687,6 +714,7 @@ Log(Key, Msg = "", PrefixTime = False) {
 		FormatTime, CurrentTime
 		Msg := CurrentTime " " Msg
 	}
+	Msg := StrReplace(Msg, "`n", " ")
 	IniWrite, %Msg%, %IniFile%, Log, %Key%
 }
 
