@@ -61,6 +61,7 @@ Global _Updater       := Browser " WinUpdater"
 , _DownloadSelfError  := "Could not download the new WinUpdater version."
 , _DownloadSetupError := "Could not download the setup file."
 , _Downloaded         := "New version downloaded."
+, _CheckingHash       := "Checking file integrity..."
 , _FindSumsUrlError   := "Could not find the URL to the checksum file."
 , _FindChecksumError  := "Could not find the checksum for the downloaded file."
 , _ChecksumMatchError := "The file checksum did not match, so it's possible the download failed."
@@ -331,6 +332,11 @@ StartUpdate() {
 		GuiShow()
 
 	WaitForClose()
+
+	If (!IsDownloaded Or !FileExist(SetupFile))
+		DownloadUpdate()
+	Else
+		VerifyChecksum()
 }
 
 WaitForClose() {
@@ -350,11 +356,6 @@ WaitForClose() {
 	; Check for newer version since notification was shown
 	If (Notified And GetNewVersion())
 		WaitForClose()
-
-	If (!IsDownloaded Or !FileExist(SetupFile))
-		DownloadUpdate()
-	Else
-		VerifyChecksum()
 }
 
 DownloadUpdate() {
@@ -388,6 +389,7 @@ VerifyChecksum() {
 		Die(_FindChecksumError)
 
 	; Compare checksum with downloaded file
+	Progress(_CheckingHash)
 	If (Checksum1 <> Hash(SetupFile))
 		Die(_ChecksumMatchError)
 
@@ -732,7 +734,7 @@ Progress(Msg, End = False) {
 	GuiControl,, LogField, % SubStr(Msg, InStr(Msg, "`n") + 1)
 	If (End)
 		GuiControl,, ProgField, 100
-	Else
+	Else If (Msg <> _NewVersionFound)
 		GuiControl,, ProgField, +15
 	Menu, Tray, Tip, %Msg%
 
