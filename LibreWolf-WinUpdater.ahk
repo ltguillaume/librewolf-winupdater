@@ -1,6 +1,6 @@
 ; LibreWolf WinUpdater - https://codeberg.org/ltguillaume/librewolf-winupdater
-;@Ahk2Exe-SetFileVersion 1.8.2
-;@Ahk2Exe-SetProductVersion 1.8.2
+;@Ahk2Exe-SetFileVersion 1.8.3
+;@Ahk2Exe-SetProductVersion 1.8.3
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -36,7 +36,7 @@ Global Args       := ""
 , SettingTask     := A_Args[1] = "/CreateTask" Or A_Args[1] = "/RemoveTask"
 , ChangesMade     := False
 , Done            := False
-, IniFile, Path, ProgramW6432, Build, UpdateSelf, Task, CurrentUpdaterVersion, ReleaseInfo, CurrentVersion, NewVersion, SetupFile, IsDownloaded, GuiHwnd, LogField, ProgField, VerField, TaskSetField, UpdateButton
+, IniFile, Path, ProgramW6432, Build, UpdateSelf, Task, CurrentUpdaterVersion, ReleaseInfo, CurrentVersion, NewVersion, SetupFile, GuiHwnd, LogField, ProgField, VerField, TaskSetField, UpdateButton
 
 ; Strings
 Global _Updater       := Browser " WinUpdater"
@@ -332,11 +332,7 @@ StartUpdate() {
 		GuiShow()
 
 	WaitForClose()
-
-	If (!IsDownloaded Or !FileExist(SetupFile))
-		DownloadUpdate()
-	Else
-		VerifyChecksum()
+	DownloadUpdate()
 }
 
 WaitForClose() {
@@ -393,8 +389,10 @@ VerifyChecksum() {
 	If (Checksum1 <> Hash(SetupFile))
 		Die(_ChecksumMatchError)
 
-	IsDownloaded := True
+	RunUpdate()
+}
 
+RunUpdate() {
 	If (IsPortable)
 		ExtractPortable()
 	Else {
@@ -454,7 +452,7 @@ Install() {
 	SetupParams := StrReplace(SetupParams, "{}", Folder)
 ;MsgBox, %SetupFile% %SetupParams%
 	; Run silent setup
-	RunWait, %SetupFile% %SetupParams% /S,, UseErrorLevel
+	RunWait, %SetupFile% /S %SetupParams%,, UseErrorLevel
 	If (!ErrorLevel)
 		WriteReport()
 	Else {
