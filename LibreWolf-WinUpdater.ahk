@@ -551,10 +551,10 @@ Die(Error, Var = False, Show = True) {
 
 Download(URL) {
 	Try {
-		Object := ComObjCreate("WinHttp.WinHttpRequest.5.1")
-		Object.Open("GET", URL)
-		Object.Send()
-		Result := Object.ResponseText
+		Object := ComObjCreate("Msxml2.XMLHTTP")
+		Object.open("GET", URL, false)
+		Object.send()
+		Result := Object.responseText
 ;MsgBox, %Result%
 		Return Result
 	} Catch {
