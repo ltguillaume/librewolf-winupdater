@@ -1,6 +1,6 @@
 ; LibreWolf WinUpdater - https://codeberg.org/ltguillaume/librewolf-winupdater
-;@Ahk2Exe-SetFileVersion 1.8.3
-;@Ahk2Exe-SetProductVersion 1.8.3
+;@Ahk2Exe-SetFileVersion 1.8.4
+;@Ahk2Exe-SetProductVersion 1.8.4
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -226,7 +226,7 @@ SelfUpdate() {
 	If (!VerCompare(GetLatestVersion(), ">" CurrentUpdaterVersion))
 		Return
 
-	RegExMatch(ReleaseInfo, "i)name"":""" Browser "-WinUpdater.+?\.zip"".*?browser_download_url"":""(.*?)""", DownloadUrl)
+	RegExMatch(ReleaseInfo, "i)name"":\s*""" Browser "-WinUpdater.+?\.zip"".*?browser_download_url"":\s*""(.*?)""", DownloadUrl)
 	If (!DownloadUrl1)
 		Return Log("SelfUpdate", _FindUrlError, True)
 
@@ -357,7 +357,7 @@ WaitForClose() {
 DownloadUpdate() {
 	; Get setup file URL
 	FilenameEnd := Build (IsPortable ? "-portable\.zip" : "-setup\.exe")
-	RegExMatch(ReleaseInfo, "i)""name"":""(" Browser "-.{1,30}?" FilenameEnd ")"",\s*""url"":""(.+?)""", DownloadUrl)
+	RegExMatch(ReleaseInfo, "i)""name"":\s*""(" Browser "-.{1,30}?" FilenameEnd ")"",\s*""url"":\s*""(.+?)""", DownloadUrl)
 ;MsgBox, Downloading`n%DownloadUrl2%`nto`n%DownloadUrl1%
 	If (!DownloadUrl1 Or !DownloadUrl2)
 		Die(_FindUrlError)
@@ -374,7 +374,7 @@ DownloadUpdate() {
 
 VerifyChecksum() {
 	; Get checksum file
-	RegExMatch(ReleaseInfo, "i)""name"":""sha256sums\.txt"",\s*""url"":""(.+?)""", ChecksumUrl)
+	RegExMatch(ReleaseInfo, "i)""name"":\s*""sha256sums\.txt"",\s*""url"":\s*""(.+?)""", ChecksumUrl)
 	If (!ChecksumUrl1)
 		Die(_FindSumsUrlError)
 	Checksum := Download(ChecksumUrl1)
@@ -591,10 +591,14 @@ GetLatestVersion() {
 			Die(_DownloadJsonError)
 	}
 
-	RegExMatch(ReleaseInfo, "i)tag_name"":""v?(.+?)""", Release)
+	RegExMatch(ReleaseInfo, "i)tag_name"":\s*""v?(.+?)""", Release)
 	LatestVersion := Release1
-	If (!LatestVersion)
-		Die(_JsonVersionError)
+	If (!LatestVersion) {
+		If (Task = _Updater And InStr(ReleaseInfo, "{") <> 1)	; Codeberg non-JSON error page
+			Return CurrentUpdaterVersion
+		Else
+			Die(_JsonVersionError)
+	}
 
 	Return LatestVersion
 }
