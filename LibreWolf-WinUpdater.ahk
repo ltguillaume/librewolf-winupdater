@@ -1,6 +1,6 @@
 ; LibreWolf WinUpdater - https://codeberg.org/ltguillaume/librewolf-winupdater
-;@Ahk2Exe-SetFileVersion 1.8.4
-;@Ahk2Exe-SetProductVersion 1.8.4
+;@Ahk2Exe-SetFileVersion 1.8.6
+;@Ahk2Exe-SetProductVersion 1.8.6
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -22,7 +22,6 @@ Global Args       := ""
 , ExtractDir      := A_Temp "\" Browser "-Extracted"
 , BrowserExe      := "librewolf.exe"
 , BrowserPortable := "LibreWolf\" BrowserExe
-, PortableExe     := A_ScriptDir "\" Browser "-Portable.exe"
 , ConnectCheckUrl := "https://gitlab.com/manifest.json"
 , ReleaseApiUrl   := "https://gitlab.com/api/v4/projects/44042130/releases/permalink/latest"
 , SelfUpdateZip   := Browser "-WinUpdater.zip"
@@ -30,7 +29,8 @@ Global Args       := ""
 , TaskCreateFile  := "ScheduledTask-Create.ps1"
 , TaskRemoveFile  := "ScheduledTask-Remove.ps1"
 , UpdaterFile     := Browser "-WinUpdater.exe"
-, IsPortable      := FileExist(A_ScriptDir "\" Browser "-Portable.exe")
+, PortableExe     := A_ScriptDir "\" Browser "-Portable.exe"
+, IsPortable      := FileExist(PortableExe)
 , RunningPortable := A_Args[1] = "/Portable"
 , Scheduled       := A_Args[1] = "/Scheduled"
 , SettingTask     := A_Args[1] = "/CreateTask" Or A_Args[1] = "/RemoveTask"
@@ -498,12 +498,6 @@ Exit(Restart = False) {
 		Gui, Destroy
 
 ; Clean up
-	If (RunningPortable And FileExist(PortableExe)) {
-		A_Args.RemoveAt(1)	; Remove "/Portable" from array
-		CheckArgs()
-;MsgBox, %Args%
-		Run, %PortableExe% %Args%
-	}
 	Log("LastRun",, True)
 	If (SetupFile) {
 		Sleep, 2000
@@ -511,7 +505,10 @@ Exit(Restart = False) {
 	}
 	If (IsPortable)
 		FileRemoveDir, %ExtractDir%, 1
-	FileDelete, %A_ScriptFullPath%.wubak
+	If (FileExist(A_ScriptFullPath ".wubak") And !FileExist(A_ScriptFullPath))
+		FileMove, %A_ScriptFullPath%.wubak, %A_ScriptFullPath%
+	Else
+		FileDelete, %A_ScriptFullPath%.wubak
 	FileDelete, %SelfUpdateZip%
 	If (FileExist(Path ".wubak")) {
 		If (FileExist(Path))
@@ -522,6 +519,12 @@ Exit(Restart = False) {
 
 	If (Restart)
 		Run, % A_ScriptFullPath StrReplace(Args, "/Scheduled")
+	Else If (IsPortable And RunningPortable) {
+		A_Args.RemoveAt(1)	; Remove "/Portable" from array
+		CheckArgs()
+;MsgBox, %PortableExe% %Args%
+		Run, %PortableExe% %Args%
+	}
 	ExitApp
 }
 
