@@ -1,6 +1,6 @@
 ; LibreWolf WinUpdater - https://codeberg.org/ltguillaume/librewolf-winupdater
-;@Ahk2Exe-SetFileVersion 1.8.6
-;@Ahk2Exe-SetProductVersion 1.8.6
+;@Ahk2Exe-SetFileVersion 1.9.0
+;@Ahk2Exe-SetProductVersion 1.9.0
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -318,7 +318,7 @@ GetNewVersion() {
 	NewVersion := GetLatestVersion()
 ;MsgBox, ReleaseInfo = %ReleaseInfo%`nCurrentVersion = %CurrentVersion%`nNewVersion = %NewVersion%
 	IniRead, LastUpdateTo, %IniFile%, Log, LastUpdateTo, False
-	If (NewVersion = CurrentVersion) {
+	If (!VerCompare(NewVersion, ">" CurrentVersion)) {
 		Progress(_NoNewVersion, True)
 		Log("LastResult", _NoNewVersion)
 		Return False
