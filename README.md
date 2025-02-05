@@ -22,9 +22,14 @@ An attempt to make updating LibreWolf for Windows much easier.
 - If you're having issues with the updater on __Windows 7__  (not officially supported by LibreWolf anymore), please have a look at [these instructions](https://codeberg.org/ltGuillaume/LibreWolf-WinUpdater/issues/15).
 - The updater needs to be able to write to `LibreWolf-WinUpdater.ini` in its own folder, (so make sure it has permission to do so), otherwise WinUpdater will copy itself to `%AppData%\LibreWolf\WinUpdater` and run from there.
 - `LibreWolf-WinUpdater.ini` contains a `[Log]` section that shows the results of the last update check and update action.
-- LibreWolf WinUpdater also updates itself automatically, so you won't have to check for new releases here. If you prefer to update WinUpdater yourself, add the following to the .ini file:
+- Sometimes Windows will show a **Security Alert** dialog: `Revocation information for the Security certificate for this site is not available`. This may happen if the website certificate has been recently renewed, _or_ if the website has actually been compromised. WinUpdater should show you a dialog on top of that, asking you if you want to continue or not. If this happens often, you can tell WinUpdater to ignore these checks by setting `IgnoreCrlErrors` to `1` in the .ini file under `[Settings]`:
   ```ini
   [Settings]
+  IgnoreCrlErrors=1
+  ```
+- LibreWolf WinUpdater also updates itself automatically, so you won't have to check for new releases here. If you prefer to update it manually, set `UpdateSelf` to `0` in the .ini file under `[Settings]`:
+  ```ini
+	[Settings]
   UpdateSelf=0
   ```
 

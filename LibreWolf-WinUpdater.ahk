@@ -1,6 +1,6 @@
 ; LibreWolf WinUpdater - https://codeberg.org/ltguillaume/librewolf-winupdater
-;@Ahk2Exe-SetFileVersion 1.9.0
-;@Ahk2Exe-SetProductVersion 1.9.0
+;@Ahk2Exe-SetFileVersion 1.9.1
+;@Ahk2Exe-SetProductVersion 1.9.1
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -36,7 +36,7 @@ Global Args       := ""
 , SettingTask     := A_Args[1] = "/CreateTask" Or A_Args[1] = "/RemoveTask"
 , ChangesMade     := False
 , Done            := False
-, IniFile, Path, ProgramW6432, Build, UpdateSelf, Task, CurrentUpdaterVersion, ReleaseInfo, CurrentVersion, NewVersion, SetupFile, GuiHwnd, LogField, ProgField, VerField, TaskSetField, UpdateButton
+, IniFile, Path, ProgramW6432, Build, IgnoreCrlErrors, UpdateSelf, Task, CurrentDomain, CurrentUpdaterVersion, ReleaseInfo, CurrentVersion, NewVersion, SetupFile, GuiHwnd, LogField, ProgField, VerField, TaskSetField, UpdateButton
 
 ; Strings
 Global _Updater       := Browser " WinUpdater"
@@ -54,6 +54,7 @@ Global _Updater       := Browser " WinUpdater"
 , _CopyError          := "Could not copy {}"
 , _GetBuildError      := "Could not determine the build type of " Browser "."
 , _GetVersionError    := "Could not determine the current version of`n{}"
+, _CrlError           := "Could not determine whether the certificate for {} is valid. This may happen if the website certificate has been recently renewed OR if the website has actually been compromised.`nContinue anyway?"
 , _DownloadJsonError  := "Could not download the {Task} releases file."
 , _JsonVersionError   := "Could not get version info from the {Task} releases file."
 , _FindUrlError       := "Could not find the URL to download {Task}."
@@ -103,7 +104,10 @@ Init() {
 	EnvGet, ProgramW6432, ProgramW6432
 	SplitPath, A_ScriptFullPath,,,, BaseName
 	IniFile := A_ScriptDir "\" BaseName ".ini"
+	IniRead, IgnoreCrlErrors, %IniFile%, Settings, IgnoreCrlErrors, 0
 	IniRead, UpdateSelf, %IniFile%, Settings, UpdateSelf, 1	; Using "False" in .ini causes If (UpdateSelf) to be True
+	IniWrite, %IgnoreCrlErrors%, %IniFile%, Settings, IgnoreCrlErrors
+	IniWrite, %UpdateSelf%, %IniFile%, Settings, UpdateSelf
 	SetWorkingDir, %A_Temp%
 	Menu, Tray, Tip, %_Updater% %CurrentUpdaterVersion%
 	Menu, Tray, NoStandard
@@ -457,7 +461,7 @@ Install() {
 		WriteReport()
 	Else {
 		MsgBox, 52, %_Updater%, %_SilentUpdateError%
-		IfMsgBox No
+		IfMsgBox, No
 			Progress(_UpdateError, True)
 		Else {
 			RunWait, %SetupFile% %SetupParams%,, UseErrorLevel
@@ -553,15 +557,34 @@ Die(Error, Var = False, Show = True) {
 }
 
 Download(URL) {
+	CurrentDomain := SubStr(URL, 1, InStr(URL, "/",,, 3) - 1)
+	SetTimer, CrlCheck
 	Try {
 		Object := ComObjCreate("Msxml2.XMLHTTP")
 		Object.open("GET", URL, false)
 		Object.send()
 		Result := Object.responseText
 ;MsgBox, %Result%
-		Return Result
 	} Catch {
-		Return False
+		Result := False
+	}
+	SetTimer, CrlCheck, Delete
+	CurrentDomain := ""
+	Return Result
+}
+
+CrlCheck() {
+	If (WinExist("ahk_exe " UpdaterFile " ahk_class #32770")) {
+		If (!IgnoreCrlErrors) {
+			Msg := StrReplace(_CrlError, "{}", CurrentDomain)
+			MsgBox, 52, %_Updater%, %Msg%
+			IfMsgBox, No
+			{
+				ControlClick, Button2	; Abort
+				Return
+			}
+		}
+		ControlClick, Button1	; Continue
 	}
 }
 
