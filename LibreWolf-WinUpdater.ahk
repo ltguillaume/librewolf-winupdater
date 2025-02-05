@@ -54,7 +54,7 @@ Global _Updater       := Browser " WinUpdater"
 , _CopyError          := "Could not copy {}"
 , _GetBuildError      := "Could not determine the build type of " Browser "."
 , _GetVersionError    := "Could not determine the current version of`n{}"
-, _CrlError           := "Could not determine whether the certificate for {} is valid. This may happen if the website certificate has been recently renewed OR if the website has actually been compromised.`nContinue anyway?"
+, _CrlError           := "The server certificate revocation check for {} has failed. Right-click on WinUpdater's tray icon, then ""WinUpdater"" for more info. Continue anyway?"
 , _DownloadJsonError  := "Could not download the {Task} releases file."
 , _JsonVersionError   := "Could not get version info from the {Task} releases file."
 , _FindUrlError       := "Could not find the URL to download {Task}."
@@ -159,7 +159,7 @@ TrayAction(ItemName, GuiEvent, LinkIndex) {
 	If (LinkIndex = 2)
 		ItemName := "WinUpdater"
 
-	Url := "https://codeberg.org/ltguillaume/" Browser "-" ItemName
+	Url := "https://codeberg.org/ltguillaume/" Browser "-" ItemName "#readme"
 	Try Run, %Url%
 	Catch {
 		RegRead, DefBrowser, HKCR, .html
