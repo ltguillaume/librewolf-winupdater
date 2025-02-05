@@ -10,8 +10,8 @@ An attempt to make updating LibreWolf for Windows much easier.
 ## Getting started
 - If you want to run the portable version of LibreWolf, download and extract [`librewolf-xxx.x.x-windows-x86_64-portable.zip`](https://librewolf.net/installation/windows/) (second blue button). It already contains a compiled version of the project hosted here.  
   LibreWolf will be updated automatically whenever you run `LibreWolf-Portable.exe`  (checks for new versions happen once a day). If you wish to perform update checks manually instead, just rename WinUpdater to e.g. `LibreWolf-ManualUpdater.exe` and run it when needed.
-- When installing LibreWolf, the [official installer](https://librewolf.net/installation/windows/) will show an option to install WinUpdater.  
-  Alternatively, you can download and extract the latest [`LibreWolf-WinUpdater_x.x.x.zip`](https://codeberg.org/ltGuillaume/LibreWolf-WinUpdater/releases) to a folder you like, e.g. `%AppData%\LibreWolf`. Run `LibreWolf-WinUpdater.exe` to check for an update. If one is available, it will be downloaded immediately.
+- When installing LibreWolf, the [official installer](https://librewolf.net/installation/windows/) will show an option to install WinUpdater. On first run, it will copy itself to `%AppData%\LibreWolf\WinUpdater` to be able to update itself without administrator privileges.  
+  Alternatively, you can download and extract the latest [`LibreWolf-WinUpdater_x.x.x.zip`](https://codeberg.org/ltGuillaume/LibreWolf-WinUpdater/releases) to a like `%AppData%\LibreWolf\WinUpdater`. Run `LibreWolf-WinUpdater.exe` to check for an update. If one is available, it will be downloaded immediately.
 
 ## Scheduled updates
 - Run LibreWolf WinUpdater and select the option to automatically check for updates. This will prompt for administrator permissions and a blue (PowerShell) window will notify you of the result. The scheduled task will run while the current user account is logged on (at start-up and every 4 hours).
