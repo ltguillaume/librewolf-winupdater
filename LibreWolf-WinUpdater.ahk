@@ -19,7 +19,6 @@
 
 Global Args       := ""
 , Browser         := "LibreWolf"
-, ExtractDir      := A_Temp "\" Browser "-Extracted"
 , BrowserExe      := "librewolf.exe"
 , BrowserPortable := "LibreWolf\" BrowserExe
 , ConnectCheckUrl := "https://gitlab.com/manifest.json"
@@ -36,7 +35,7 @@ Global Args       := ""
 , SettingTask     := A_Args[1] = "/CreateTask" Or A_Args[1] = "/RemoveTask"
 , ChangesMade     := False
 , Done            := False
-, IniFile, Path, ProgramW6432, Build, IgnoreCrlErrors, UpdateSelf, Task, CurrentDomain, CurrentUpdaterVersion, ReleaseInfo, CurrentVersion, NewVersion, SetupFile, GuiHwnd, LogField, ProgField, VerField, TaskSetField, UpdateButton
+, IniFile, Path, ProgramW6432, WorkDir, ExtractDir, Build, IgnoreCrlErrors, UpdateSelf, Task, CurrentDomain, CurrentUpdaterVersion, ReleaseInfo, CurrentVersion, NewVersion, SetupFile, GuiHwnd, LogField, ProgField, VerField, TaskSetField, UpdateButton
 
 ; Strings
 Global _Updater       := Browser " WinUpdater"
@@ -106,9 +105,9 @@ Init() {
 	IniFile := A_ScriptDir "\" BaseName ".ini"
 	IniRead, IgnoreCrlErrors, %IniFile%, Settings, IgnoreCrlErrors, 0
 	IniRead, UpdateSelf, %IniFile%, Settings, UpdateSelf, 1	; Using "False" in .ini causes If (UpdateSelf) to be True
+	IniRead, WorkDir, %IniFile%, Settings, WorkDir, %A_Temp%
 	IniWrite, %IgnoreCrlErrors%, %IniFile%, Settings, IgnoreCrlErrors
 	IniWrite, %UpdateSelf%, %IniFile%, Settings, UpdateSelf
-	SetWorkingDir, %A_Temp%
 	Menu, Tray, Tip, %_Updater% %CurrentUpdaterVersion%
 	Menu, Tray, NoStandard
 	Menu, Tray, Add, Show, TrayAction
@@ -192,13 +191,24 @@ CheckPaths() {
 		}
 
 		Path := Trim(Path, """")	; FileExist chokes on double quotes
+		If (!FileExist(Path) And FileExist(Path ".wubak")) {
+;MsgBox, Restoring from .wubak
+			FileMove, %Path%.wubak, %Path%
+			If (!FileExist(Path) And !A_IsAdmin And !Portable)
+				RunElevated()
+		}
 		If (!FileExist(Path))
 			Path = %A_ProgramFiles%\%Browser%\%BrowserExe%
 	}
 ;MsgBox, Path = %Path%`nSetupParams = %SetupParams%
 
-	If (!FileExist(Path) And FileExist(Path ".wubak"))
-		FileMove, %Path%.wubak, %Path%
+	If (WorkDir = ".")
+		WorkDir := A_ScriptDir
+	If (WorkDir = "" Or !InStr(FileExist(WorkDir), "D"))
+		WorkDir := A_Temp
+	ExtractDir := WorkDir "\" Browser "-Extracted"
+;MsgBox, %WorkDir% | %ExtractDir%
+	SetWorkingDir, %WorkDir%
 
 	CheckPath:
 	If (!FileExist(Path)) {
@@ -239,7 +249,7 @@ SelfUpdate() {
 		Return Log("SelfUpdate", _DownloadSelfError, True)
 ;MsgBox, Extracting Self-Update
 	FileMove, %A_ScriptFullPath%, %A_ScriptFullPath%.wubak, 1
-	If (!Extract(A_Temp "\" SelfUpdateZip, A_ScriptDir))
+	If (!Extract(WorkDir "\" SelfUpdateZip, A_ScriptDir))
 		Return Log("SelfUpdate", _ExtractionError, True)
 
 	If (IsPortable) {
@@ -260,8 +270,14 @@ SelfUpdate() {
 CheckWriteAccess() {
 	If (!FileExist(A_ScriptDir "\" BrowserExe)) {
 		FileAppend,, %IniFile%
-		If (!ErrorLevel)
+		If (!ErrorLevel) {
+			If (WorkDir <> A_Temp) {
+				FileCreateDir, %ExtractDir%
+				If (ErrorLevel)
+					Die(_WritePermError, WorkDir)
+			}
 			Return
+		}
 	}
 
 	AppData := A_AppData "\" Browser "\WinUpdater"
@@ -416,7 +432,7 @@ ExtractPortable() {
 	PreventRunningWhileUpdating()
 ; Extract archive of portable version
 	Progress(_Extracting)
-	If (!Extract(A_Temp "\" SetupFile, ExtractDir))
+	If (!Extract(WorkDir "\" SetupFile, ExtractDir))
 		Die(_ExtractionError)
 
 	Loop, Files, %ExtractDir%\*, D
@@ -440,7 +456,7 @@ ExtractPortable() {
 			}
 		}
 	}
-	SetWorkingDir, %A_Temp%
+	SetWorkingDir, %WorkDir%
 
 	WriteReport()
 }
@@ -600,7 +616,7 @@ Extract(From, To) {
 		SetWorkingDir, %To%
 		RunWait, powershell.exe -NoProfile -Command "Expand-Archive """%From%""" . -Force" -ErrorAction Stop,, Hide
 		Error := ErrorLevel
-		SetWorkingDir, %A_Temp%
+		SetWorkingDir, %WorkDir%
 	}
 ;MsgBox, Extract(%From%, %To%) ErrorLevel = %Error%
 
@@ -799,6 +815,14 @@ TaskSet() {
 		Progress(_SettingTask _Done, True)
 		GuiShow(True)	; Don't start updating, just wait for close
 	}
+}
+
+RunElevated() {
+;MsgBox, Running elevated (args = "%Args%")
+	Try {
+		Run *RunAs "%A_ScriptFullPath%" %Args% /Restart
+	}
+	ExitApp
 }
 
 Unelevate(Forced = False) {
