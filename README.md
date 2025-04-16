@@ -32,6 +32,12 @@ An attempt to make updating LibreWolf for Windows much easier.
   [Settings]
   UpdateSelf=0
   ```
+- If for some reason WinUpdater is not able to use the user's default `%Temp%` folder for downloading and extracting files, you can specify an alternative working directory by setting `WorkDir` in the .ini file under `[Settings]`:
+  ```ini
+  [Settings]
+  WorkDir=D:\Temp
+  ```
+  To specify the directory of `LibreWolf-WinUpdater.exe`, type `WorkDir=.`.
 
 ## Credits
 * [LibreWolf](https://librewolf.net) by [ohfp](https://gitlab.com/ohfp), [stanzabird](https://stanzabird.nl), [fxbrit](https://gitlab.com/fxbrit), [maltejur](https://gitlab.com/maltejur), [bgstack15](https://bgstack15.wordpress.com) et al.
