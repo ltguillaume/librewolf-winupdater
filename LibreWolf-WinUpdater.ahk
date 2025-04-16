@@ -110,10 +110,10 @@ Init() {
 	IniWrite, %UpdateSelf%, %IniFile%, Settings, UpdateSelf
 	Menu, Tray, Tip, %_Updater% %CurrentUpdaterVersion%
 	Menu, Tray, NoStandard
-	Menu, Tray, Add, Show, TrayAction
-	Menu, Tray, Add, Portable Help, TrayAction
-	Menu, Tray, Add, WinUpdater Help, TrayAction
-	Menu, Tray, Add, Exit, TrayAction
+	Menu, Tray, Add, Show, Action
+	Menu, Tray, Add, Portable Help, Action
+	Menu, Tray, Add, WinUpdater Help, Action
+	Menu, Tray, Add, Exit, Action
 	Menu, Tray, Default, Show
 
 	; Set up GUI
@@ -143,10 +143,11 @@ Init() {
 }
 
 Help() {
-	TrayAction("WinUpdater", False, False)
+	Action("WinUpdater", False, False)
 }
 
-TrayAction(ItemName, GuiEvent, LinkIndex) {
+Action(ItemName, GuiEvent, LinkIndex) {
+	; Tray items
 	If (ItemName = "Show") {
 		If (!WinExist("ahk_id " GuiHwnd))
 			GuiShow()
@@ -160,6 +161,8 @@ TrayAction(ItemName, GuiEvent, LinkIndex) {
 			GuiShow()
 		Return
 	}
+
+	; Links in error dialog
 	If (LinkIndex = 1)
 		Return Restart()
 	If (LinkIndex = 2)
@@ -569,7 +572,7 @@ Die(Error, Var = False, Show = True) {
 	Gui, Add, Text, x264 y-2 cYellow, % Chr("0x26A0")
 	Gui, Font, s9
 	Msg := Error " " (ChangesMade ? _ChangesMade : _NoChangesMade) "`n`n" _GoToWebsite
-	Gui, Add, Link, gTrayAction x15 y81 w290 cCCCCCC, %Msg%
+	Gui, Add, Link, gAction x15 y81 w290 cCCCCCC, %Msg%
 
 	Done := True
 	If (Show)
