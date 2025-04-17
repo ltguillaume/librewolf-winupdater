@@ -21,7 +21,7 @@ Global Args       := ""
 , Browser         := "LibreWolf"
 , BrowserExe      := "librewolf.exe"
 , BrowserPortable := "LibreWolf\" BrowserExe
-, ConnectCheckUrl := "https://gitlab.com/manifest.json"
+, ConnectCheckUrl := "https://gitlab.com/-/manifest.json"
 , ReleaseApiUrl   := "https://gitlab.com/api/v4/projects/44042130/releases/permalink/latest"
 , SelfUpdateZip   := Browser "-WinUpdater.zip"
 , SetupParams     := "/D={}"
