@@ -591,6 +591,7 @@ Download(URL) {
 		Result := Object.responseText
 ;MsgBox, %Result%
 	} Catch {
+;MsgBox, Download aborted: %URL%
 		Result := False
 	}
 	SetTimer, CrlCheck, Delete
@@ -599,7 +600,7 @@ Download(URL) {
 }
 
 CrlCheck() {
-	If (WinExist("ahk_exe " UpdaterFile " ahk_class #32770")) {
+	If (WinExist("ahk_exe " UpdaterFile " ahk_class #32770",, Browser)) {
 		If (!IgnoreCrlErrors) {
 			Msg := StrReplace(_CrlError, "{}", CurrentDomain)
 			MsgBox, 52, %_Updater%, %Msg%
