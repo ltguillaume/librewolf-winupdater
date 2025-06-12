@@ -99,8 +99,10 @@ Exit()
 
 Init() {
 	FileGetVersion, CurrentUpdaterVersion, %A_ScriptFullPath%
-	CurrentUpdaterVersion := SubStr(CurrentUpdaterVersion, 1, -2)
+	CurrentUpdaterVersion := RegExReplace(CurrentUpdaterVersion, "(\.0)+$")
 	EnvGet, ProgramW6432, ProgramW6432
+	If (ProgramW6432 = "")
+		ProgramW6432 := "?"
 	SplitPath, A_ScriptFullPath,,,, BaseName
 	IniFile := A_ScriptDir "\" BaseName ".ini"
 	IniRead, IgnoreCrlErrors, %IniFile%, Settings, IgnoreCrlErrors, 0
@@ -446,27 +448,38 @@ ExtractPortable() {
 
 	Loop, Files, %ExtractDir%\*, D
 	{
+		LibreWolfExtracted := A_LoopFilePath	;	Get the first folder of the extracted archive
+		Break
+	}
+
+	; Remove files not present in the new version's browser folder
+	SetWorkingDir, %A_ScriptDir%\%Browser%
+	Loop, Files, *, R
+	{
+		If (!FileExist(LibreWolfExtracted "\" Browser "\" A_LoopFilePath))
+			FileRecycle, %A_LoopFilePath%
+	}
+
 ;MsgBox, Traversing %A_LoopFilePath%
-		SetWorkingDir, %A_LoopFilePath%	; Enter the first folder of the extracted archive
-		Loop, Files, *, R
-		{
-			If (A_LoopFileName = UpdaterFile)
-				Continue
-			FileGetSize, CurrentFileSize, %A_ScriptDir%\%A_LoopFilePath%
+	SetWorkingDir, %LibreWolfExtracted%
+	Loop, Files, *, R
+	{
+		If (A_LoopFileName = UpdaterFile)
+			Continue
+		FileGetSize, CurrentFileSize, %A_ScriptDir%\%A_LoopFilePath%
 ;MsgBox, % A_LoopFilePath "`n" A_LoopFileSize "`n" CurrentFileSize "`n" Hash(A_LoopFilePath) "`n" Hash(A_ScriptDir "\" A_LoopFilePath)
-			If (!FileExist(A_ScriptDir "\" A_LoopFileDir))
-				FileCreateDir, %A_ScriptDir%\%A_LoopFileDir%
-			If (!FileExist(A_ScriptDir "\" A_LoopFilePath) Or A_LoopFileSize <> CurrentFileSize Or Hash(A_LoopFilePath) <> Hash(A_ScriptDir "\" A_LoopFilePath)) {
+		If (!FileExist(A_ScriptDir "\" A_LoopFileDir))
+			FileCreateDir, %A_ScriptDir%\%A_LoopFileDir%
+		If (!FileExist(A_ScriptDir "\" A_LoopFilePath) Or A_LoopFileSize <> CurrentFileSize Or Hash(A_LoopFilePath) <> Hash(A_ScriptDir "\" A_LoopFilePath)) {
 ;MsgBox, Moving %A_LoopFilePath%
-				FileMove, %A_LoopFilePath%, %A_ScriptDir%\%A_LoopFilePath%, 1
-				If (ErrorLevel)
-					Die(_MoveToTargetError, A_LoopFilePath)
-				ChangesMade := True
-			}
+			FileMove, %A_LoopFilePath%, %A_ScriptDir%\%A_LoopFilePath%, 1
+			If (ErrorLevel)
+				Die(_MoveToTargetError, A_LoopFilePath)
+			ChangesMade := True
 		}
 	}
-	SetWorkingDir, %WorkDir%
 
+	SetWorkingDir, %WorkDir%
 	WriteReport()
 }
 
