@@ -374,7 +374,7 @@ StartUpdate() {
 
 WaitForClose() {
 	; Notify and wait if browser is running
-	PathDS   := StrReplace(Path, "\", "\\")
+	PathDS := StrReplace(Path, "\", "\\")
 	Wait:
 	For Proc in ComObjGet("winmgmts:").ExecQuery("Select ProcessId from Win32_Process where ExecutablePath=""" PathDS """") {
 		If (!Notified) {
@@ -465,7 +465,7 @@ ExtractPortable() {
 	SetWorkingDir, %A_ScriptDir%\%Browser%
 	Loop, Files, *, R
 	{
-		If (!FileExist(LibreWolfExtracted "\" Browser "\" A_LoopFilePath))
+		If (!FileExist(LibreWolfExtracted "\" Browser "\" A_LoopFilePath) And A_LoopFileName <> BrowserExe ".wubak")
 			FileRecycle, %A_LoopFilePath%
 	}
 
