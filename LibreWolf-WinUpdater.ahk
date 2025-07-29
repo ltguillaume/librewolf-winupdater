@@ -35,7 +35,7 @@ Global Args       := ""
 , ChangesMade     := False
 , Done            := False
 , IniFile, Path, ProgramW6432, WorkDir, ExtractDir, Build, IgnoreCrlErrors, UpdateSelf, Task, CurrentDomain, CurrentUpdaterVersion
-, ReleaseInfo, CurrentVersion, NewVersion, SetupFile, GuiHwnd, LogField, ProgField, VerField, TaskSetField, UpdateButton
+, ReleaseInfo, CurrentVersion, NewVersion, SetupFile, GuiHwnd, LogField, ProgField, VerField, TaskSetField, UpdateButton, shutdownBlocked
 
 ; Strings
 Global _Updater       := Browser " WinUpdater"
@@ -76,6 +76,7 @@ Global _Updater       := Browser " WinUpdater"
 , _NoNewVersion       := "No new version found."
 , _ExtractionError    := "Could not extract the {Task} archive.`nMake sure " Browser " is not running and restart the updater."
 , _MoveToTargetError  := "Could not move the following file into the target folder:`n{}"
+, _IsUpdating         := "Update in progress..."
 , _IsUpdated          := Browser " has been updated."
 , _To                 := "to"
 , _GoToWebsite        := "<a>Restart WinUpdater</a> or visit the <a>project website</a> for help."
@@ -256,6 +257,8 @@ SelfUpdate() {
 	If (!DownloadUrl1 Or !DownloadUrl2)
 		Return Log("SelfUpdate", _FindUrlError, True)
 
+	PreventShutdown()
+
 ;MsgBox, %DownloadUrl1%`n%DownloadUrl2%
 	SelfUpdateZip := DownloadUrl1
 	UrlDownloadToFile, %DownloadUrl2%, %SelfUpdateZip%
@@ -433,6 +436,7 @@ VerifyChecksum(File) {
 }
 
 RunUpdate() {
+	PreventShutdown()
 	If (IsPortable)
 		ExtractPortable()
 	Else {
@@ -532,7 +536,7 @@ WriteReport() {
 	Log("LastUpdateTo", NewVersion)
 	Log("LastResult", _IsUpdated)
 	Progress(_IsUpdated, True)
-	Notify(_IsUpdated, CurrentVersion " " _To " v" NewVersion, Scheduled ? 60000 : 0)
+	Notify(_IsUpdated, CurrentVersion " " _To " v" NewVersion, Scheduled And !shutdownBlocked ? 60000 : 0)
 
 	Exit()
 }
@@ -543,7 +547,7 @@ Restart() {
 
 Exit(Restart = False) {
 ; Wait for close
-	If (!Restart And !A_Args.Length() And WinExist("ahk_id " GuiHwnd))
+	If (!Restart And !shutdownBlocked And !A_Args.Length() And WinExist("ahk_id " GuiHwnd))
 		WinWaitClose, ahk_id %GuiHwnd%
 	Else
 		Gui, Destroy
@@ -576,6 +580,7 @@ Exit(Restart = False) {
 ;MsgBox, %PortableExe% %Args%
 		Run, %PortableExe% %Args%
 	}
+
 	ExitApp
 }
 
@@ -636,6 +641,25 @@ CrlCheck() {
 	}
 }
 
+PreventShutdown() {
+; https://www.autohotkey.com/docs/v1/lib/OnMessage.htm#shutdown
+	DllCall("kernel32.dll\SetProcessShutdownParameters", "UInt", 0x4FF, "UInt", 0)
+	OnMessage(0x0011, "BlockShutdown")
+}
+
+BlockShutdown(wParam, lParam) {
+	DllCall("ShutdownBlockReasonCreate", "ptr", GuiHwnd, "wstr", _IsUpdating)
+	shutdownBlocked := True
+	OnExit("AllowShutdown")
+	GuiShow()
+	Return False
+}
+
+AllowShutdown() {
+	DllCall("ShutdownBlockReasonDestroy", "ptr", A_ScriptHwnd)
+	OnExit(A_ThisFunc, 0)
+}
+
 Extract(From, To) {
 ;MsgBox, %From% to %To%
 	FileRemoveDir, %ExtractDir%, 1
@@ -690,7 +714,7 @@ GuiEscape:
 Return
 
 GuiShow(Wait = False) {
-	Focus  := WinActive("ahk_id " GuiHwnd) Or !Scheduled
+	Focus  := WinActive("ahk_id " GuiHwnd) Or !Scheduled Or shutdownBlocked
 	NoFocus := WinExist("ahk_id " GuiHwnd) ? "NA" : "Minimize"
 	Gui, Show, % "AutoSize " (Focus ? "" : NoFocus)
 	If (!Focus)
