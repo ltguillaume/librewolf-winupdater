@@ -72,7 +72,7 @@ Global _Updater       := Browser " WinUpdater"
 , _Installing         := "Installing new version..."
 , _UpdateError        := "Error while updating."
 , _SilentUpdateError  := "Silent update did not complete.`nDo you want to run the interactive installer?"
-, _NewVersionFound    := "A new version is available.`nClose " Browser " to start updating..."
+, _NewVersionFound    := "New version available.`nClose " Browser " to continue..."
 , _NoNewVersion       := "No new version found."
 , _ExtractionError    := "Could not extract the {Task} archive.`nMake sure " Browser " is not running and restart the updater."
 , _MoveToTargetError  := "Could not move the following file into the target folder:`n{}"
@@ -801,7 +801,8 @@ Log(Key, Msg = "", PrefixTime = False) {
 Notify(Msg, Ver = 0, Delay = 0) {
 	If (!Ver)
 		Ver := NewVersion
-	Menu, Tray, Tip, %_Updater% %CurrentUpdaterVersion%`n%Path%`n`n%Msg%
+	Folder := StrReplace(Path, "\" BrowserExe)
+	Menu, Tray, Tip, %_Updater% %CurrentUpdaterVersion%`n%Folder%`n`n%Msg%
 	If (Scheduled Or Delay) {
 		TrayTip, %Msg%, v%Ver%,, 16
 		Sleep, %Delay%
