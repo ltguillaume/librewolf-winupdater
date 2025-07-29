@@ -201,15 +201,16 @@ CheckPaths() {
 			If (ErrorLevel)
 				Path := ProgramW6432 "\" Browser "\" BrowserExe
 		}
-
 		Path := Trim(Path, """")	; FileExist chokes on double quotes
-		If (FileExist(Path ".wubak")) {
-;MsgBox, Previous update may have been interrupted, restoring librewolf.exe.wubak
-			FileMove, %Path%.wubak, %Path%, 1
-			If (ErrorLevel And !A_IsAdmin And !Portable)
-				RunElevated()
-		}
 	}
+
+	If (FileExist(Path ".wubak")) {
+;MsgBox, Previous update may have been interrupted, restoring librewolf.exe.wubak
+		FileMove, %Path%.wubak, %Path%, 1
+		If (ErrorLevel And !A_IsAdmin And !Portable)
+			RunElevated()
+	}
+
 ;MsgBox, Path = %Path%`nSetupParams = %SetupParams%
 	Menu, Tray, Tip, %_Updater% %CurrentUpdaterVersion%`n%Path%
 
