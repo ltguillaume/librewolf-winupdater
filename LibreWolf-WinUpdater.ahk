@@ -34,11 +34,16 @@ Global Args       := ""
 , SettingTask     := A_Args[1] = "/CreateTask" Or A_Args[1] = "/RemoveTask"
 , ChangesMade     := False
 , Done            := False
-, IniFile, Path, ProgramW6432, WorkDir, ExtractDir, Build, IgnoreCrlErrors, UpdateSelf, Task, CurrentDomain, CurrentUpdaterVersion
+, IniFile, Path, Folder, ProgramW6432, WorkDir, ExtractDir, Build, IgnoreCrlErrors, UpdateSelf, Task, CurrentDomain, CurrentUpdaterVersion
 , ReleaseInfo, CurrentVersion, NewVersion, SetupFile, GuiHwnd, LogField, ProgField, VerField, TaskSetField, UpdateButton, shutdownBlocked
 
 ; Strings
 Global _Updater       := Browser " WinUpdater"
+, _Show               := "Show"
+, _PortableHelp       := "Portable Help"
+, _UpdaterHelp        := "WinUpdater Help"
+, _Settings           := "Settings"
+, _Exit               := "Exit"
 , _NoConnectionError  := "Could not connect to " SubStr(ConnectCheckUrl, 1, InStr(ConnectCheckUrl, "/",,, 3) - 1) "."
 , _IsRunningError     := _Updater " is already running."
 , _IsElevated         := "To set up scheduled tasks properly, please do not run WinUpdater as administrator."
@@ -113,11 +118,12 @@ Init() {
 	IniWrite, %UpdateSelf%, %IniFile%, Settings, UpdateSelf
 	Menu, Tray, Tip, %_Updater% %CurrentUpdaterVersion%
 	Menu, Tray, NoStandard
-	Menu, Tray, Add, Show, Action
-	Menu, Tray, Add, Portable Help, Action
-	Menu, Tray, Add, WinUpdater Help, Action
-	Menu, Tray, Add, Exit, Action
-	Menu, Tray, Default, Show
+	Menu, Tray, Add, %_Show%, Action
+	Menu, Tray, Add, %_PortableHelp%, Action
+	Menu, Tray, Add, %_UpdaterHelp%, Action
+	Menu, Tray, Add, %_Settings%, Action
+	Menu, Tray, Add, %_Exit%, Action
+	Menu, Tray, Default, %_Show%
 
 	; Set up GUI
 	Gui, +HwndGuiHwnd -MaximizeBox
@@ -151,34 +157,39 @@ Help() {
 
 Action(ItemName, GuiEvent, LinkIndex) {
 	; Tray items
-	If (ItemName = "Show") {
-		If (!WinExist("ahk_id " GuiHwnd))
-			GuiShow()
-		WinWait, ahk_id %GuiHwnd%
-		WinActivate
-		Return
-	} Else If (ItemName = "Exit") {
-		If (Done)
-			GuiClose()
-		Else
-			GuiShow()
-		Return
-	}
+	Switch ItemName
+	{
+		Case _Show:
+			If (!WinExist("ahk_id " GuiHwnd))
+				GuiShow()
+			WinWait, ahk_id %GuiHwnd%
+			WinActivate
+			Return
+		Case _Settings:
+			Run, %IniFile%
+			Return
+		Case _Exit:
+			If (Done)
+				GuiClose()
+			Else
+				GuiShow()
+			Return
+		Default:
+			; Links in error dialog
+			If (LinkIndex = 1)
+				Return Restart()
+			If (LinkIndex = 2)
+				ItemName := "WinUpdater"
 
-	; Links in error dialog
-	If (LinkIndex = 1)
-		Return Restart()
-	If (LinkIndex = 2)
-		ItemName := "WinUpdater"
-
-	Url := "https://codeberg.org/ltguillaume/" Browser "-" StrReplace(ItemName, " Help") "#readme"
-	Try Run, %Url%
-	Catch {
-		RegRead, DefBrowser, HKCR, .html
-		RegRead, DefBrowser, HKCR, %DefBrowser%\Shell\Open\Command
-		Run, % StrReplace(DefBrowser, "%1", Url)
-		If (ErrorLevel)
-			MsgBox, 48, %_Updater%, %_NoDefaultBrowser%
+			Url := "https://codeberg.org/ltguillaume/" Browser "-" StrReplace(ItemName, " Help") "#readme"
+			Try Run, %Url%
+			Catch {
+				RegRead, DefBrowser, HKCR, .html
+				RegRead, DefBrowser, HKCR, %DefBrowser%\Shell\Open\Command
+				Run, % StrReplace(DefBrowser, "%1", Url)
+				If (ErrorLevel)
+					MsgBox, 48, %_Updater%, %_NoDefaultBrowser%
+			}
 	}
 }
 
@@ -213,7 +224,8 @@ CheckPaths() {
 	}
 
 ;MsgBox, Path = %Path%`nSetupParams = %SetupParams%
-	Menu, Tray, Tip, %_Updater% %CurrentUpdaterVersion%`n%Path%
+	Folder := StrReplace(Path, "\" BrowserExe)
+	Menu, Tray, Tip, %_Updater% %CurrentUpdaterVersion%`n%Folder%
 
 	If (WorkDir = ".")
 		WorkDir := A_ScriptDir
@@ -503,7 +515,6 @@ Install() {
 	Progress(_Installing)
 	If (Scheduled)
 		Notify(_Installing, CurrentVersion " " _To " v" NewVersion, 3000)
-	Folder := StrReplace(Path, BrowserExe, "")
 	SetupParams := StrReplace(SetupParams, "{}", Folder)
 ;MsgBox, %SetupFile% %SetupParams%
 	; Run silent setup
@@ -825,7 +836,6 @@ Log(Key, Msg = "", PrefixTime = False) {
 Notify(Msg, Ver = 0, Delay = 0) {
 	If (!Ver)
 		Ver := NewVersion
-	Folder := StrReplace(Path, "\" BrowserExe)
 	Menu, Tray, Tip, %_Updater% %CurrentUpdaterVersion%`n%Folder%`n`n%Msg%
 	If (Scheduled Or Delay) {
 		TrayTip, %Msg%, v%Ver%,, 16
@@ -839,7 +849,7 @@ Progress(Msg, End = False) {
 		GuiControl,, ProgField, 100
 	Else If (Msg <> _NewVersionFound)
 		GuiControl,, ProgField, +15
-	Menu, Tray, Tip, %_Updater% %CurrentUpdaterVersion%`n%Path%`n`n%Msg%
+	Menu, Tray, Tip, %_Updater% %CurrentUpdaterVersion%`n%Folder%`n`n%Msg%
 
 	GuiControlGet, Prog,, ProgField
 	Done := Prog >= 100
