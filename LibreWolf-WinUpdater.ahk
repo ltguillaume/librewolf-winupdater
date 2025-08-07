@@ -481,8 +481,10 @@ ExtractPortable() {
 	SetWorkingDir, %A_ScriptDir%\%Browser%
 	Loop, Files, *, R
 	{
-		If (!FileExist(LibreWolfExtracted "\" Browser "\" A_LoopFilePath) And A_LoopFileName <> BrowserExe ".wubak")
-			FileRecycle, %A_LoopFilePath%
+		If (!FileExist(LibreWolfExtracted "\" Browser "\" A_LoopFilePath) And A_LoopFileName <> BrowserExe ".wubak") {
+			FileCreateDir, %Folder%.wubak\%A_LoopFileDir%
+			FileMove, %A_LoopFilePath%, %Folder%.wubak\%A_LoopFilePath%, 1
+		}
 	}
 
 ;MsgBox, Traversing %A_LoopFilePath%
