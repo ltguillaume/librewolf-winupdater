@@ -274,7 +274,7 @@ SelfUpdate() {
 ;MsgBox, %DownloadUrl1%`n%DownloadUrl2%
 	SelfUpdateZip := DownloadUrl1
 	UrlDownloadToFile, %DownloadUrl2%, %SelfUpdateZip%
-	If (!FileExist(SelfUpdateZip))
+	If (ErrorLevel Or !FileExist(SelfUpdateZip))
 		Return Log("SelfUpdate", _DownloadSelfError, True)
 ;MsgBox, Extracting %SelfUpdateZip%
 	VerifyChecksum(SelfUpdateZip)
@@ -418,7 +418,7 @@ DownloadUpdate() {
 	Progress(_Downloading)
 	SetupFile := DownloadUrl1
 	UrlDownloadToFile, %DownloadUrl2%, %SetupFile%
-	If (!FileExist(SetupFile))
+	If (ErrorLevel Or !FileExist(SetupFile))
 		Die(_DownloadSetupError)
 
 	VerifyChecksum(SetupFile)
