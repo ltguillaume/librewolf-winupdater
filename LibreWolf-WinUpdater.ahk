@@ -1,8 +1,8 @@
 ; LibreWolf WinUpdater - https://codeberg.org/ltguillaume/librewolf-winupdater
-;@Ahk2Exe-SetFileVersion 1.11.0
-;@Ahk2Exe-SetProductVersion 1.11.0
+;@Ahk2Exe-SetFileVersion 1.11.1
+;@Ahk2Exe-SetProductVersion 1.11.1
 
-;@Ahk2Exe-Base Unicode 64*
+;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
 ;@Ahk2Exe-SetCopyright ltguillaume
 ;@Ahk2Exe-SetDescription LibreWolf WinUpdater
