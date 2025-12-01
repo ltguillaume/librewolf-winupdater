@@ -18,6 +18,11 @@ An attempt to make updating LibreWolf for Windows much easier.
 - If your account has administrator permissions, the update will be fully automatic. If not, the update will be downloaded and you will be asked by WinUpdater to start the update (administrator permissions required).  
 - If LibreWolf is already running, the updater will notify you of the new version. The update will start as soon as you close the browser.
 
+## Issues
+- If you set up scheduled updates, you might get annoyed by some __anti-cheat software__. It may wrongfully point at WinUpdater, because it is built upon AutoHotkey, which _can_ be used to cheat in games. If this happens, you can either:
+  1. Open the __Task Scheduler__ via the Start menu, then double-click on `LibreWolf WinUpdater...` in the `Task Scheduler Library`, open the `Triggers` tab, then click on `One time` and the button `Delete`. Then press `OK` to make the change to _only check for updates 1 minute after logging on_ (and not every 4 hours). This will still cause issues if you leave games opened when locking your user account, though.
+  2. Create a shortcut to `%AppData%\LibreWolf\WinUpdater\LibreWolf-Winupdater.exe /RemoveTask` and one to `%AppData%\LibreWolf\WinUpdater\LibreWolf-Winupdater.exe /CreateTask` (on your desktop), so you can quickly prevent WinUpdater from running during gameplay and reactivate it afterwards. Just put them next to the shortcuts of your game launchers and you won't forget.
+
 ## Remarks
 - If you're having issues with the updater on __Windows 7__  (not officially supported by LibreWolf anymore), please have a look at [these instructions](https://codeberg.org/ltguillaume/librewolf-winupdater/issues/15).
 - The updater needs to be able to write to `LibreWolf-WinUpdater.ini` in its own folder, (so make sure it has permission to do so), otherwise WinUpdater will copy itself to `%AppData%\LibreWolf\WinUpdater` and run from there.
