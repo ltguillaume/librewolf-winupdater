@@ -1,6 +1,6 @@
 ; LibreWolf WinUpdater - https://codeberg.org/ltguillaume/librewolf-winupdater
-;@Ahk2Exe-SetFileVersion 1.11.1
-;@Ahk2Exe-SetProductVersion 1.11.1
+;@Ahk2Exe-SetFileVersion 1.12.0
+;@Ahk2Exe-SetProductVersion 1.12.0
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -21,8 +21,8 @@ Global Args       := ""
 , Browser         := "LibreWolf"
 , BrowserExe      := "librewolf.exe"
 , BrowserPortable := "LibreWolf\" BrowserExe
-, ConnectCheckUrl := "https://gitlab.com/-/manifest.json"
-, ReleaseApiUrl   := "https://gitlab.com/api/v4/projects/44042130/releases/permalink/latest"
+, ConnectCheckUrl := "https://codeberg.org/api/v1/version"
+, ReleaseApiUrl   := "https://codeberg.org/api/v1/repos/librewolf/bsys6/releases/latest"
 , SetupParams     := "/D={}"
 , TaskCreateFile  := "ScheduledTask-Create.ps1"
 , TaskRemoveFile  := "ScheduledTask-Remove.ps1"
@@ -265,7 +265,7 @@ SelfUpdate() {
 	If (!VerCompare(GetLatestVersion(), ">" CurrentUpdaterVersion))
 		Return
 
-	RegExMatch(ReleaseInfo, "i)name"":\s*""(" Browser "-WinUpdater.{1,15}\.zip)"".*?browser_download_url"":\s*""(.*?)""", DownloadUrl)
+	RegExMatch(ReleaseInfo, "i)""name"":\s*""(" Browser "-WinUpdater.{1,15}\.zip)"".*?""browser_download_url"":\s*""(.+?)""", DownloadUrl)
 	If (!DownloadUrl1 Or !DownloadUrl2)
 		Return Log("SelfUpdate", _FindUrlError, True)
 
@@ -409,7 +409,8 @@ WaitForClose() {
 DownloadUpdate() {
 	; Get setup file URL
 	FilenameEnd := Build (IsPortable ? "-portable\.zip" : "-setup\.exe")
-	RegExMatch(ReleaseInfo, "i)""name"":\s*""(" Browser "-.{1,30}?" FilenameEnd ")"",\s*""url"":\s*""(.+?)""", DownloadUrl)
+	RegExMatch(ReleaseInfo, "i)""name"":\s*""(" Browser "-.{1,30}?" FilenameEnd ")"".*?""browser_download_url"":\s*""(.+?)""", DownloadUrl)
+
 ;MsgBox, Downloading`n%DownloadUrl2%`nto`n%DownloadUrl1%
 	If (!DownloadUrl1 Or !DownloadUrl2)
 		Die(_FindUrlError)
@@ -426,7 +427,7 @@ DownloadUpdate() {
 
 VerifyChecksum(File) {
 	; Get checksum file
-	RegEx := Task = _Updater ? "i)name"":\s*""" Browser "-WinUpdater.+?\.sha256"".*?browser_download_url"":\s*""(.*?)""" : "i)""name"":\s*""sha256sums\.txt"",\s*""url"":\s*""(.+?)"""
+	RegEx := "i)""name"":\s*""" (Task = _Updater ? Browser "-WinUpdater.+?\.sha256" : "sha256sums\.txt") """.*?""browser_download_url"":\s*""(.+?)"""
 	RegExMatch(ReleaseInfo, RegEx, ChecksumUrl)
 	If (!ChecksumUrl1)
 		Die(_FindSumsUrlError)
