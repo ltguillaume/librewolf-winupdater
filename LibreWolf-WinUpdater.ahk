@@ -1,6 +1,6 @@
 ; LibreWolf WinUpdater - https://codeberg.org/ltguillaume/librewolf-winupdater
-;@Ahk2Exe-SetFileVersion 1.12.0
-;@Ahk2Exe-SetProductVersion 1.12.0
+;@Ahk2Exe-SetFileVersion 1.12.1
+;@Ahk2Exe-SetProductVersion 1.12.1
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -360,8 +360,14 @@ GetCurrentBuild() {
 }
 
 CheckConnection() {
-	If (!Download(ConnectCheckUrl))
-		Die(_NoConnectionError,, !Scheduled)	; Show only if not scheduled
+	Connected := Download(ConnectCheckUrl)
+;MsgBox, %Connected%
+	If (!Connected Or !InStr(Connected, """version"":")) {
+		RegExMatch(Connected, "i)<title>(.+?)</title>", Title)
+		Title := Title1 ? "`n" Title1 "." : ""
+;MsgBox, %Title%
+		Die(_NoConnectionError Title,, !Scheduled)	; Show only if not scheduled
+	}
 }
 
 GetNewVersion() {
