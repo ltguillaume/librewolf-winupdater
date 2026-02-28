@@ -1,6 +1,6 @@
 ; LibreWolf WinUpdater - https://codeberg.org/ltguillaume/librewolf-winupdater
-;@Ahk2Exe-SetFileVersion 1.12.1
-;@Ahk2Exe-SetProductVersion 1.12.1
+;@Ahk2Exe-SetFileVersion 1.12.2
+;@Ahk2Exe-SetProductVersion 1.12.2
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -634,6 +634,7 @@ Download(URL) {
 	Try {
 		Object := ComObjCreate("Msxml2.XMLHTTP")
 		Object.open("GET", URL, false)
+		Object.setRequestHeader("User-Agent", "AutoHotkey")
 		Object.send()
 		Result := Object.responseText
 ;MsgBox, %Result%
