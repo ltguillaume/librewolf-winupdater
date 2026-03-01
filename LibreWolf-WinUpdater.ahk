@@ -1,6 +1,6 @@
 ; LibreWolf WinUpdater - https://codeberg.org/ltguillaume/librewolf-winupdater
-;@Ahk2Exe-SetFileVersion 1.12.2
-;@Ahk2Exe-SetProductVersion 1.12.2
+;@Ahk2Exe-SetFileVersion 1.12.3
+;@Ahk2Exe-SetProductVersion 1.12.3
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -334,7 +334,7 @@ CheckWriteAccess() {
 }
 
 GetCurrentVersion() {
-	; FileVersion() by SKAN https://www.autohotkey.com/boards/viewtopic.php?&t=4282
+	; FileVersion() by SKAN https://www.autohotkey.com/boards/viewtopic.php?t=4282
 	If (Sz := DllCall("Version\GetFileVersionInfoSizeW", "WStr", Path, "Int", 0))
 		If (DllCall("Version\GetFileVersionInfoW", "WStr", Path, "Int", 0, "UInt", VarSetCapacity(V, Sz), "Str", V))
 			If (DllCall("Version\VerQueryValueW", "Str", V, "WStr", "\StringFileInfo\000004B0\ProductVersion", "PtrP", pInfo, "Int", 0))
@@ -343,20 +343,37 @@ GetCurrentVersion() {
 	If (!CurrentVersion)
 		Die(_GetVersionError, Path)
 
-	GetCurrentBuild()
+	Build := GetCurrentBuild()
 
 	GuiControl,, VerField, %CurrentVersion% (%Build%)
 }
 
 GetCurrentBuild() {
-	; by SKAN and Drugwash https://www.autohotkey.com/board/topic/70777-how-to-get-autohotkeyexe-build-information-from-file/?p=448263
-	Call := DllCall("GetBinaryTypeW", "Str", "\\?\" Path, "UInt *", Build)
-	If (Call And Build = 6)
-		Build := "x86_64"
-	Else If (Call And Build = 0)
-		Build := "i686"
-	Else
+	; by RaptorX https://www.autohotkey.com/boards/viewtopic.php?t=132434
+	Try {
+		File := FileOpen(Path, "r")
+		If (File) {
+			File.Seek(0x3C, 0)	; MS-DOS header
+			Offset := File.ReadUInt()
+			File.Seek(Offset, 0)	; PE signature
+			If (File.ReadUInt() = 0x4550) {	; "PE\0\0"
+				File.Seek(Offset + 4, 0)	; Machine field from COFF header
+				Machine := File.ReadUShort()
+			}
+			File.Close()
+
+			Switch Machine {
+				Case 0x8664:
+					Return "x86_64"
+				Case 0x014C:
+					Return "i686"
+				Case 0xAA64:
+					Return "arm64"
+			}
+		}
 		Die(_GetBuildError)
+	} Catch e
+		Die(_GetBuildError ": " e.Message)
 }
 
 CheckConnection() {
