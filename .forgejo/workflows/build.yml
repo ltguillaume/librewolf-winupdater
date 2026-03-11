@@ -1,0 +1,49 @@
+name: Build
+
+on: [workflow_dispatch]
+
+env:
+  app_file: LibreWolf-WinUpdater
+
+jobs:
+  build:
+    runs-on: codeberg-small
+    container:
+      image: scottyhardy/docker-wine:stable
+    steps:
+      - name: Set up dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nodejs zip
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Ahk2Exe
+        run: |
+          wget https://github.com/AutoHotkey/AutoHotkey/releases/download/v1.1.37.02/AutoHotkey_1.1.37.02.zip -q
+          unzip AutoHotkey_1.1.37.02.zip Compiler/*
+          rm AutoHotkey_1.1.37.02.zip
+
+      - name: Set up Resource Hacker
+        run: |
+          wget https://www.angusj.com/resourcehacker/resource_hacker.zip -q
+          unzip resource_hacker.zip ResourceHacker.exe -d Compiler
+          rm resource_hacker.zip
+
+      - name: Build executable
+        run: |
+          xvfb-run wine Compiler/Ahk2Exe.exe /in ${{ env.APP_FILE }}.ahk
+
+      - name: Create zip
+        run: |
+          APP_VERSION=$(grep -oP "SetFileVersion \K[\d.]+" ${{ env.APP_FILE }}.ahk)
+          mkdir ./dist
+          zip ./dist/${{ env.APP_FILE }}_${APP_VERSION}.zip ${{ env.APP_FILE }}.exe ${{ env.APP_FILE }}.url
+
+      - name: Upload artifacts
+        uses: https://data.forgejo.org/forgejo/upload-artifact@v4
+        with:
+          path: |
+            dist/${{ env.APP_FILE }}*.zip
+          retention-days: 7

@@ -1,0 +1,89 @@
+name: Release
+
+on: [workflow_dispatch]
+
+env:
+  app_file: LibreWolf-WinUpdater
+  app_name: LibreWolf WinUpdater
+
+jobs:
+  release:
+    runs-on: codeberg-small
+    container:
+      image: scottyhardy/docker-wine:stable
+    steps:
+      - name: Set up dependencies
+        run: |
+          wget https://pkg.ossign.org/debian/repository.key -O /etc/apt/keyrings/ossign.asc -q
+          echo "deb [signed-by=/etc/apt/keyrings/ossign.asc] https://pkg.ossign.org/debian all main" | tee /etc/apt/sources.list.d/ossign.list
+          sudo apt-get update
+          sudo apt-get install -y nodejs zip ossign
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Ahk2Exe
+        run: |
+          wget https://github.com/AutoHotkey/AutoHotkey/releases/download/v1.1.37.02/AutoHotkey_1.1.37.02.zip -q
+          unzip AutoHotkey_1.1.37.02.zip Compiler/*
+          rm AutoHotkey_1.1.37.02.zip
+
+      - name: Set up Resource Hacker
+        run: |
+          wget https://www.angusj.com/resourcehacker/resource_hacker.zip -q
+          unzip resource_hacker.zip ResourceHacker.exe -d Compiler
+          rm resource_hacker.zip
+
+      - name: Build executable
+        run: |
+          xvfb-run wine Compiler/Ahk2Exe.exe /in ${{ env.APP_FILE }}.ahk
+
+      - name: Sign executable with ossign
+        if: ${{ secrets.OSSIGN_CONFIG != '' }}
+        env:
+          OSSIGN_CONFIG: ${{ secrets.OSSIGN_CONFIG }}
+        run: |
+          ossign -t pecoff -o ${{ env.APP_FILE }}.exe ${{ env.APP_FILE }}.exe
+
+      - name: Create zip
+        run: |
+          APP_VERSION=$(grep -oP "SetFileVersion \K[\d.]+" ${{ env.APP_FILE }}.ahk)
+          echo "APP_VERSION=${APP_VERSION}" >> $GITHUB_ENV
+          mkdir ./dist
+          zip ./dist/${{ env.APP_FILE }}_${APP_VERSION}.zip ${{ env.APP_FILE }}.exe ${{ env.APP_FILE }}.url *.ps1
+
+      - name: Upload artifacts
+        uses: https://data.forgejo.org/forgejo/upload-artifact@v4
+        with:
+          path: |
+            dist/${{ env.APP_FILE }}*.zip
+          retention-days: 7
+
+      - name: Generate checksums
+        run: |
+          cd dist
+          for file in *; do
+            sha256sum "$file" > "$file.sha256"
+          done
+
+      - name: Create Release
+        uses: actions/forgejo-release@v2.11.2
+        with:
+          direction: upload
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
+          token: ${{ secrets.FORGE_TOKEN }}
+          tag: ${{ env.APP_VERSION }}
+          title: ${{ env.APP_NAME }} ${{ env.APP_VERSION }}
+          override: true
+          prerelease: true
+          release-dir: dist
+          release-notes: |
+            - [x] 
+            
+            > [!CAUTION]
+            > Some antivirus software will mark this as malware. [This is a false positive](https://www.autohotkey.com/docs/v1/FAQ.htm#Virus). Please report the program as safe if possible. _Known problematic vendors: Arctic Wolf, Gridinsoft, NANO-Antivirus, SecureAge, Skyhigh (SWG), Trapmine, Trellix, Zillya._
+            > [VirusTotal Report for this version]()
+            
+            > [!NOTE]
+            > The release checksum is signed and can be verified using GPG ([instructions](https://codeberg.org/ltguillaume/resources/src/branch/main/signing)).
