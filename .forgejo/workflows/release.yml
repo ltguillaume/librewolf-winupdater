@@ -38,12 +38,27 @@ jobs:
         run: |
           xvfb-run wine Compiler/Ahk2Exe.exe /in ${{ env.APP_FILE }}.ahk
 
-      - name: Sign executable with ossign
+      - name: Sign executable with OSSign
         if: ${{ secrets.OSSIGN_CONFIG != '' }}
         env:
           OSSIGN_CONFIG: ${{ secrets.OSSIGN_CONFIG }}
         run: |
           ossign -t pecoff -o ${{ env.APP_FILE }}.exe ${{ env.APP_FILE }}.exe
+
+      - id: virustotal
+        name: Scan with VirusTotal
+        uses: https://github.com/crazy-max/ghaction-virustotal@v5
+        with:
+          vt_api_key: ${{ secrets.VT_API_KEY }}
+          files: |
+            ./${{ env.APP_FILE }}.exe
+
+      - name: Get VirusTotal URL
+        env:
+          ANALYSIS: ${{ steps.virustotal.outputs.analysis }}
+        run: |
+          VT_URL=$(echo "${ANALYSIS}" | grep -oP ".*exe=\K.*")
+          echo "VT_URL=${VT_URL}" >> $GITHUB_ENV
 
       - name: Create zip
         run: |
@@ -83,7 +98,7 @@ jobs:
             
             > [!CAUTION]
             > Some antivirus software will mark this as malware. [This is a false positive](https://www.autohotkey.com/docs/v1/FAQ.htm#Virus). Please report the program as safe if possible. _Known problematic vendors: Arctic Wolf, Gridinsoft, NANO-Antivirus, SecureAge, Skyhigh (SWG), Trapmine, Trellix, Zillya._
-            > [VirusTotal Report for this version]()
+            > [VirusTotal Report for this version](${{ env.VT_URL }})
             
             > [!NOTE]
             > The release checksum is signed and can be verified using GPG ([instructions](https://codeberg.org/ltguillaume/resources/src/branch/main/signing)).
