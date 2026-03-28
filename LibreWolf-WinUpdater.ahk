@@ -1,6 +1,6 @@
 ; LibreWolf WinUpdater - https://codeberg.org/librewolf/librewolf-winupdater
-;@Ahk2Exe-SetFileVersion 1.12.4
-;@Ahk2Exe-SetProductVersion 1.12.4
+;@Ahk2Exe-SetFileVersion 1.13.0
+;@Ahk2Exe-SetProductVersion 1.13.0
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -70,6 +70,7 @@ Global _Updater       := Browser " WinUpdater"
 , _FindSumsUrlError   := "Could not find the URL to the checksum file."
 , _FindChecksumError  := "Could not find the checksum for the downloaded file."
 , _ChecksumMatchError := "The file checksum for {} did not match, so it's possible the download failed."
+, _SignatureError     := "{} has not been signed correctly, which means it may have been tampered with. Only click Yes to continue if this was expected."
 , _ChangesMade        := "However, new files were written to the target folder!"
 , _NoChangesMade      := "No changes were made to your " Browser " folder."
 , _Extracting         := "Extracting portable version..."
@@ -138,6 +139,8 @@ Init() {
 	Gui, Add, Text, vLogField w222
 	Gui, Margin,, 15
 	Gui, Show, Hide, %_Updater% %CurrentUpdaterVersion%
+
+	CheckSignature(A_ScriptFullPath)
 
 	If (SettingTask Or !A_Args.Length()) {	; No arguments: when not running as portable or as a scheduled task
 		If (!IsPortable And FileExist(A_ScriptDir "\" TaskCreateFile) And FileExist(A_ScriptDir "\" TaskRemoveFile)) {	; No scheduled tasks for portable version
@@ -291,6 +294,7 @@ SelfUpdate() {
 
 	If (!FileExist(A_ScriptDir "\" UpdaterFile))
 		Die(_ExtractionError)
+	CheckSignature(A_ScriptDir "\" UpdaterFile)
 
 	If (A_ScriptName <> UpdaterFile)
 		FileMove, %A_ScriptDir%\%UpdaterFile%, %A_ScriptFullPath%
@@ -467,8 +471,27 @@ VerifyChecksum(File) {
 	If (Checksum1 <> Hash(File))
 		Die(_ChecksumMatchError, File)
 
+	If (SubStr(File, -3) = ".exe")
+		CheckSignature(File)
+
 	If (Task = Browser)
 		RunUpdate()
+}
+
+CheckSignature(File) {
+	; Check if the file is signed and valid
+	Cmd = $sig = Get-AuthenticodeSignature """%File%""" | Where-Object { $_.Status -eq """Valid""" -and $_.SignerCertificate.Subject -like """CN=Cloudyne Systems (Scheibling Consulting AB)*""" } `; exit -not $sig
+	RunWait, powershell.exe -NoProfile -Command %Cmd%,, Hide
+;MsgBox, Signature for:`n%File%`nWrong signature = %ErrorLevel%
+	If (ErrorLevel) {
+		If (File = A_ScriptDir "\" UpdaterFile)
+			FileDelete, %File%
+		MsgBox, 276, %_Updater%, % StrReplace(_SignatureError, "{}", File)
+		IfMsgBox, Yes
+			Return
+		Exit()
+	}
+;	Else MsgBox, Signature for %File% OK.
 }
 
 RunUpdate() {
@@ -522,6 +545,8 @@ ExtractPortable() {
 		If (!FileExist(A_ScriptDir "\" A_LoopFileDir))
 			FileCreateDir, %A_ScriptDir%\%A_LoopFileDir%
 		If (!FileExist(A_ScriptDir "\" A_LoopFilePath) Or A_LoopFileSize <> CurrentFileSize Or Hash(A_LoopFilePath) <> Hash(A_ScriptDir "\" A_LoopFilePath)) {
+			If (A_LoopFileName = BrowserExe)
+				CheckSignature(A_LoopFileLongPath)
 ;MsgBox, Moving %A_LoopFilePath%
 			FileMove, %A_LoopFilePath%, %A_ScriptDir%\%A_LoopFilePath%, 1
 			If (ErrorLevel)
@@ -591,10 +616,9 @@ Exit(Restart = False) {
 
 ; Clean up
 	Log("LastRun",, True)
-	If (SetupFile) {
-		Sleep, 2000
-		FileDelete, %SetupFile%
-	}
+	SetWorkingDir, %WorkDir%
+	Sleep, 2000
+	FileDelete, %SetupFile%
 	If (IsPortable)
 		FileRemoveDir, %ExtractDir%, 1
 	If (FileExist(A_ScriptFullPath ".wubak") And !FileExist(A_ScriptFullPath))

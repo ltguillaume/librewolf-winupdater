@@ -13,8 +13,10 @@ jobs:
     steps:
       - name: Set up dependencies
         run: |
+          wget https://pkg.ossign.org/debian/repository.key -O /etc/apt/keyrings/ossign.asc -q
+          echo "deb [signed-by=/etc/apt/keyrings/ossign.asc] https://pkg.ossign.org/debian all main" | tee /etc/apt/sources.list.d/ossign.list
           sudo apt-get update
-          sudo apt-get install -y nodejs zip
+          sudo apt-get install -y nodejs zip ossign
 
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -35,11 +37,33 @@ jobs:
         run: |
           xvfb-run wine Compiler/Ahk2Exe.exe /in ${{ env.APP_FILE }}.ahk
 
+      - name: Sign executable with OSSign
+        if: ${{ secrets.OSSIGN_CONFIG != '' }}
+        env:
+          OSSIGN_CONFIG: ${{ secrets.OSSIGN_CONFIG }}
+        run: |
+          ossign -t pecoff -o ${{ env.APP_FILE }}.exe ${{ env.APP_FILE }}.exe
+
+      - id: virustotal
+        name: Scan with VirusTotal
+        uses: https://github.com/crazy-max/ghaction-virustotal@v5
+        with:
+          vt_api_key: ${{ secrets.VT_API_KEY }}
+          files: |
+            ./${{ env.APP_FILE }}.exe
+
+      - name: Get VirusTotal URL
+        env:
+          ANALYSIS: ${{ steps.virustotal.outputs.analysis }}
+        run: |
+          VT_URL=$(echo "${ANALYSIS}" | grep -oP ".*exe=\K.*")
+          echo "VT_URL=${VT_URL}" >> $GITHUB_ENV
+
       - name: Create zip
         run: |
           APP_VERSION=$(grep -oP "SetFileVersion \K[\d.]+" ${{ env.APP_FILE }}.ahk)
           mkdir ./dist
-          zip ./dist/${{ env.APP_FILE }}_${APP_VERSION}.zip ${{ env.APP_FILE }}.exe ${{ env.APP_FILE }}.url
+          zip ./dist/${{ env.APP_FILE }}_${APP_VERSION}.zip ${{ env.APP_FILE }}.exe ${{ env.APP_FILE }}.url *.ps1
 
       - name: Upload artifacts
         uses: https://data.forgejo.org/forgejo/upload-artifact@v4

@@ -97,7 +97,7 @@ jobs:
             - [x] 
             
             > [!CAUTION]
-            > Some antivirus software will mark this as malware. [This is a false positive](https://www.autohotkey.com/docs/v1/FAQ.htm#Virus). Please report the program as safe if possible. _Known problematic vendors: Arctic Wolf, Gridinsoft, NANO-Antivirus, SecureAge, Skyhigh (SWG), Trapmine, Trellix, Zillya._
+            > Some antivirus software will mark this as malware. [This is a false positive](https://www.autohotkey.com/docs/v1/FAQ.htm#Virus). Please report the program as safe if possible. _Known problematic vendors: Arctic Wolf, DeepInstinct, Gridinsoft, NANO-Antivirus, SecureAge, Skyhigh (SWG), Trapmine, Trellix, VirIT, Zillya._
             > [VirusTotal Report for this version](${{ env.VT_URL }})
             
             > [!NOTE]
