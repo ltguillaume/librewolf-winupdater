@@ -27,8 +27,8 @@ Global Args       := ""
 , TaskCreateFile  := "ScheduledTask-Create.ps1"
 , TaskRemoveFile  := "ScheduledTask-Remove.ps1"
 , UpdaterFile     := Browser "-WinUpdater.exe"
-, PortableExe     := A_ScriptDir "\" Browser "-Portable.exe"
-, IsPortable      := FileExist(PortableExe)
+, PortableExe     := Browser "-Portable.exe"
+, IsPortable      := FileExist(A_ScriptDir "\" PortableExe)
 , RunningPortable := A_Args[1] = "/Portable"
 , Scheduled       := A_Args[1] = "/Scheduled"
 , SettingTask     := A_Args[1] = "/CreateTask" Or A_Args[1] = "/RemoveTask"
@@ -140,7 +140,8 @@ Init() {
 	Gui, Margin,, 15
 	Gui, Show, Hide, %_Updater% %CurrentUpdaterVersion%
 
-	CheckSignature(A_ScriptFullPath)
+	If (A_IsCompiled)
+		CheckSignature(A_ScriptFullPath)
 
 	If (SettingTask Or !A_Args.Length()) {	; No arguments: when not running as portable or as a scheduled task
 		If (!IsPortable And FileExist(A_ScriptDir "\" TaskCreateFile) And FileExist(A_ScriptDir "\" TaskRemoveFile)) {	; No scheduled tasks for portable version
@@ -479,7 +480,7 @@ VerifyChecksum(File) {
 }
 
 CheckSignature(File) {
-	; Check if the file is signed and valid
+	; Check if the file is correctly signed by the the right signer
 	Cmd = $sig = Get-AuthenticodeSignature """%File%""" | Where-Object { $_.Status -eq """Valid""" -and $_.SignerCertificate.Subject -like """CN=Cloudyne Systems (Scheibling Consulting AB)*""" } `; exit -not $sig
 	RunWait, powershell.exe -NoProfile -Command %Cmd%,, Hide
 ;MsgBox, Signature for:`n%File%`nWrong signature = %ErrorLevel%
@@ -536,6 +537,10 @@ ExtractPortable() {
 
 ;MsgBox, Traversing %A_LoopFilePath%
 	SetWorkingDir, %LibreWolfExtracted%
+
+	CheckSignature(A_WorkingDir "\" PortableExe)
+	CheckSignature(A_WorkingDir "\" BrowserPortable)
+
 	Loop, Files, *, R
 	{
 		If (A_LoopFileName = UpdaterFile)
@@ -545,8 +550,6 @@ ExtractPortable() {
 		If (!FileExist(A_ScriptDir "\" A_LoopFileDir))
 			FileCreateDir, %A_ScriptDir%\%A_LoopFileDir%
 		If (!FileExist(A_ScriptDir "\" A_LoopFilePath) Or A_LoopFileSize <> CurrentFileSize Or Hash(A_LoopFilePath) <> Hash(A_ScriptDir "\" A_LoopFilePath)) {
-			If (A_LoopFileName = BrowserExe)
-				CheckSignature(A_LoopFileLongPath)
 ;MsgBox, Moving %A_LoopFilePath%
 			FileMove, %A_LoopFilePath%, %A_ScriptDir%\%A_LoopFilePath%, 1
 			If (ErrorLevel)
@@ -638,8 +641,8 @@ Exit(Restart = False) {
 	Else If (IsPortable And RunningPortable) {
 		A_Args.RemoveAt(1)	; Remove "/Portable" from array
 		CheckArgs()
-;MsgBox, %PortableExe% %Args%
-		Run, %PortableExe% %Args%
+;MsgBox, %A_ScriptDir%\%PortableExe% %Args%
+		Run, %A_ScriptDir%\%PortableExe% %Args%
 	}
 
 	ExitApp
