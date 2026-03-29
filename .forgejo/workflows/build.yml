@@ -52,13 +52,6 @@ jobs:
           files: |
             ./${{ env.APP_FILE }}.exe
 
-      - name: Get VirusTotal URL
-        env:
-          ANALYSIS: ${{ steps.virustotal.outputs.analysis }}
-        run: |
-          VT_URL=$(echo "${ANALYSIS}" | grep -oP ".*exe=\K.*")
-          echo "VT_URL=${VT_URL}" >> $GITHUB_ENV
-
       - name: Create zip
         run: |
           APP_VERSION=$(grep -oP "SetFileVersion \K[\d.]+" ${{ env.APP_FILE }}.ahk)

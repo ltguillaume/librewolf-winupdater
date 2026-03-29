@@ -485,11 +485,11 @@ CheckSignature(File) {
 	RunWait, powershell.exe -NoProfile -Command %Cmd%,, Hide
 ;MsgBox, Signature for:`n%File%`nWrong signature = %ErrorLevel%
 	If (ErrorLevel) {
-		If (File = A_ScriptDir "\" UpdaterFile)
-			FileDelete, %File%
 		MsgBox, 276, %_Updater%, % StrReplace(_SignatureError, "{}", File)
 		IfMsgBox, Yes
 			Return
+		If (File = A_ScriptDir "\" UpdaterFile)
+			FileDelete, %File%
 		Exit()
 	}
 ;	Else MsgBox, Signature for %File% OK.
