@@ -1,6 +1,6 @@
 ; LibreWolf WinUpdater - https://codeberg.org/librewolf/librewolf-winupdater
-;@Ahk2Exe-SetFileVersion 1.13.0
-;@Ahk2Exe-SetProductVersion 1.13.0
+;@Ahk2Exe-SetFileVersion 1.14.0
+;@Ahk2Exe-SetProductVersion 1.14.0
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -35,7 +35,7 @@ Global Args       := ""
 , ChangesMade     := False
 , Done            := False
 , IniFile, Path, Folder, ProgramW6432, WorkDir, ExtractDir, Build, IgnoreCrlErrors, UpdateSelf, Task, CurrentDomain, CurrentUpdaterVersion
-, ReleaseInfo, CurrentVersion, NewVersion, SetupFile, GuiHwnd, LogField, ProgField, VerField, TaskSetField, UpdateButton, ShutdownBlocked
+, ReleaseInfo, CurrentVersion, NewVersion, SetupFile, GuiHwnd, LogField, ProgField, VerField, TaskSetField, UpdateButton, ShutdownBlocked, Died
 
 ; Strings
 Global _Updater       := Browser " WinUpdater"
@@ -446,6 +446,10 @@ DownloadUpdate() {
 	SetupFile := DownloadInfo1
 	DownloadUrl := DownloadInfo2
 
+	; Verify if already downloaded
+	If (FileExist(SetupFile))
+		Return VerifyChecksum(SetupFile)
+
 	; Download setup file
 	Progress(_Downloading)
 	UrlDownloadToFile, %DownloadUrl%, %SetupFile%
@@ -623,7 +627,8 @@ Exit(Restart = False) {
 	Log("LastRun",, True)
 	SetWorkingDir, %WorkDir%
 	Sleep, 2000
-	FileDelete, %SetupFile%
+	If (!Died Or Died = _DownloadSetupError Or Died = _ChecksumMatchError)
+		FileDelete, %SetupFile%
 	If (IsPortable)
 		FileRemoveDir, %ExtractDir%, 1
 	If (FileExist(A_ScriptFullPath ".wubak") And !FileExist(A_ScriptFullPath))
@@ -654,8 +659,8 @@ Exit(Restart = False) {
 
 Die(Error, Var = False, Show = True) {
 	If (Var)
-		Error := StrReplace(Error, "{}", Var)
-	Error := StrReplace(Error, "{Task}", Task)
+		Msg := StrReplace(Error, "{}", Var)
+	Msg := StrReplace(Error, "{Task}", Task)
 	Log("LastResult", Error)
 	GuiControl, Hide, ProgField
 	GuiControl, Hide, LogField
@@ -664,9 +669,10 @@ Die(Error, Var = False, Show = True) {
 	Gui, Font, s38
 	Gui, Add, Text, x264 y-2 cYellow, % Chr("0x26A0")
 	Gui, Font, s9
-	Msg := Error " " (ChangesMade ? _ChangesMade : _NoChangesMade) "`n`n" _GoToWebsite
+	Msg := Msg " " (ChangesMade ? _ChangesMade : _NoChangesMade) "`n`n" _GoToWebsite
 	Gui, Add, Link, gAction x15 y81 w290 cCCCCCC, %Msg%
 
+	Died := Error
 	Done := True
 	If (Show)
 		GuiShow(True)	; Wait for user action
