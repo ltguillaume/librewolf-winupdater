@@ -23,6 +23,7 @@ Global Args       := ""
 , BrowserPortable := "LibreWolf\" BrowserExe
 , ConnectCheckUrl := "https://codeberg.org/api/v1/version"
 , ReleaseApiUrl   := "https://codeberg.org/api/v1/repos/librewolf/bsys6/releases/latest"
+, UpdaterApiUrl   := "https://codeberg.org/api/v1/repos/librewolf/librewolf-winupdater/releases/latest"
 , SetupParams     := "/D={}"
 , TaskCreateFile  := "ScheduledTask-Create.ps1"
 , TaskRemoveFile  := "ScheduledTask-Remove.ps1"
@@ -754,7 +755,7 @@ Extract(From, To) {
 }
 
 GetLatestVersion() {
-	ReleaseUrl := (Task = _Updater ? "https://codeberg.org/api/v1/repos/ltguillaume/" Browser "-winupdater/releases/latest" : ReleaseApiUrl)
+	ReleaseUrl := (Task = _Updater ? UpdaterApiUrl : ReleaseApiUrl)
 	ReleaseInfo := Download(ReleaseUrl)
 	If (!ReleaseInfo) {
 		If (Task = _Updater)
