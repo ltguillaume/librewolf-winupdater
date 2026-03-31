@@ -269,15 +269,16 @@ SelfUpdate() {
 	If (!VerCompare(GetLatestVersion(), ">" CurrentUpdaterVersion))
 		Return
 
-	RegExMatch(ReleaseInfo, "i)""name"":\s*""(" Browser "-WinUpdater.{1,15}\.zip)"".*?""browser_download_url"":\s*""(.+?)""", DownloadUrl)
-	If (!DownloadUrl1 Or !DownloadUrl2)
+	RegExMatch(ReleaseInfo, "i)""name"":\s*""(" Browser "-WinUpdater.{1,15}\.zip)"".*?""browser_download_url"":\s*""(.+?)""", DownloadInfo)
+	If (!DownloadInfo1 Or !DownloadInfo2)
 		Return Log("SelfUpdate", _FindUrlError, True)
 
 	PreventShutdown()
 
-;MsgBox, %DownloadUrl1%`n%DownloadUrl2%
-	SelfUpdateZip := DownloadUrl1
-	UrlDownloadToFile, %DownloadUrl2%, %SelfUpdateZip%
+;MsgBox, %DownloadInfo1%`n%DownloadInfo2%
+	SelfUpdateZip := DownloadInfo1
+	DownloadUrl := DownloadInfo2
+	UrlDownloadToFile, %DownloadUrl%, %SelfUpdateZip%
 	If (ErrorLevel Or !FileExist(SelfUpdateZip))
 		Return Log("SelfUpdate", _DownloadSelfError, True)
 ;MsgBox, Extracting %SelfUpdateZip%
@@ -437,16 +438,17 @@ WaitForClose() {
 DownloadUpdate() {
 	; Get setup file URL
 	FilenameEnd := Build (IsPortable ? "-portable\.zip" : "-setup\.exe")
-	RegExMatch(ReleaseInfo, "i)""name"":\s*""(" Browser "-.{1,30}?" FilenameEnd ")"".*?""browser_download_url"":\s*""(.+?)""", DownloadUrl)
+	RegExMatch(ReleaseInfo, "i)""name"":\s*""(" Browser "-.{1,30}?" FilenameEnd ")"".*?""browser_download_url"":\s*""(.+?)""", DownloadInfo)
 
-;MsgBox, Downloading`n%DownloadUrl2%`nto`n%DownloadUrl1%
-	If (!DownloadUrl1 Or !DownloadUrl2)
+;MsgBox, Downloading`n%DownloadInfo2%`nto`n%DownloadInfo1%
+	If (!DownloadInfo1 Or !DownloadInfo2)
 		Die(_FindUrlError)
+	SetupFile := DownloadInfo1
+	DownloadUrl := DownloadInfo2
 
 	; Download setup file
 	Progress(_Downloading)
-	SetupFile := DownloadUrl1
-	UrlDownloadToFile, %DownloadUrl2%, %SetupFile%
+	UrlDownloadToFile, %DownloadUrl%, %SetupFile%
 	If (ErrorLevel Or !FileExist(SetupFile))
 		Die(_DownloadSetupError)
 
