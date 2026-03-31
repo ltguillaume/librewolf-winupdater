@@ -626,9 +626,10 @@ Exit(Restart = False) {
 ; Clean up
 	Log("LastRun",, True)
 	SetWorkingDir, %WorkDir%
-	Sleep, 2000
-	If (!Died Or Died = _DownloadSetupError Or Died = _ChecksumMatchError)
+	If (SetupFile And (!Died Or Died = _DownloadSetupError Or Died = _ChecksumMatchError)) {
+		Sleep, 2000
 		FileDelete, %SetupFile%
+	}
 	If (IsPortable)
 		FileRemoveDir, %ExtractDir%, 1
 	If (FileExist(A_ScriptFullPath ".wubak") And !FileExist(A_ScriptFullPath))
