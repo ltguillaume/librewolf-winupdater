@@ -1,6 +1,6 @@
 ; LibreWolf WinUpdater - https://codeberg.org/librewolf/librewolf-winupdater
-;@Ahk2Exe-SetFileVersion 1.14.0
-;@Ahk2Exe-SetProductVersion 1.14.0
+;@Ahk2Exe-SetFileVersion 1.14.1
+;@Ahk2Exe-SetProductVersion 1.14.1
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -71,7 +71,8 @@ Global _Updater       := Browser " WinUpdater"
 , _FindSumsUrlError   := "Could not find the URL to the checksum file."
 , _FindChecksumError  := "Could not find the checksum for the downloaded file."
 , _ChecksumMatchError := "The file checksum for {} did not match, so it's possible the download failed."
-, _SignatureError     := "{} has not been signed correctly, which means it may have been tampered with. Only click Yes to continue if this was expected."
+, _SignatureError     := "Could not verify that {} was correctly signed. Make sure PowerShell has been granted internet access. If so, the file mentioned may have been tampered with. Only click Yes to continue if this warning was expected."
+, _SignatureErrorExit := "Signature verification has failed."
 , _ChangesMade        := "However, new files were written to the target folder!"
 , _NoChangesMade      := "No changes were made to your " Browser " folder."
 , _Extracting         := "Extracting portable version..."
@@ -497,7 +498,7 @@ CheckSignature(File) {
 			Return
 		If (File = A_ScriptDir "\" UpdaterFile)
 			FileDelete, %File%
-		Exit()
+		Die(_SignatureErrorExit)
 	}
 ;	Else MsgBox, Signature for %File% OK.
 }
