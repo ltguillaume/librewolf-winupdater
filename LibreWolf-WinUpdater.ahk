@@ -35,7 +35,7 @@ Global Args       := ""
 , SettingTask     := A_Args[1] = "/CreateTask" Or A_Args[1] = "/RemoveTask"
 , ChangesMade     := False
 , Done            := False
-, IniFile, Path, Folder, ProgramW6432, WorkDir, ExtractDir, Build, IgnoreCrlErrors, UpdateSelf, Task, CurrentDomain, CurrentUpdaterVersion
+, IniFile, Path, Folder, ProgramW6432, WorkDir, ExtractDir, Build, IgnoreCrlErrors, NoSigChecks, UpdateSelf, Task, CurrentDomain, CurrentUpdaterVersion
 , ReleaseInfo, CurrentVersion, NewVersion, SetupFile, GuiHwnd, LogField, ProgField, VerField, TaskSetField, UpdateButton, ShutdownBlocked, Died
 
 ; Strings
@@ -115,9 +115,11 @@ Init() {
 	SplitPath, A_ScriptFullPath,,,, BaseName
 	IniFile := A_ScriptDir "\" BaseName ".ini"
 	IniRead, IgnoreCrlErrors, %IniFile%, Settings, IgnoreCrlErrors, 0
+	IniRead, NoSigChecks, %IniFile%, Settings, NoSigChecks, 0	; Using "False" in .ini causes If (NoSigChecks) to be True
 	IniRead, UpdateSelf, %IniFile%, Settings, UpdateSelf, 1	; Using "False" in .ini causes If (UpdateSelf) to be True
 	IniRead, WorkDir, %IniFile%, Settings, WorkDir, %A_Temp%
 	IniWrite, %IgnoreCrlErrors%, %IniFile%, Settings, IgnoreCrlErrors
+	IniWrite, %NoSigChecks%, %IniFile%, Settings, NoSigChecks
 	IniWrite, %UpdateSelf%, %IniFile%, Settings, UpdateSelf
 	Menu, Tray, Tip, %_Updater% %CurrentUpdaterVersion%
 	Menu, Tray, NoStandard
@@ -488,6 +490,8 @@ VerifyChecksum(File) {
 }
 
 CheckSignature(File) {
+	If (NoSigChecks)
+		Return
 	; Check if the file is correctly signed by the the right signer
 	Cmd = $sig = Get-AuthenticodeSignature """%File%""" | Where-Object { $_.Status -eq """Valid""" -and $_.SignerCertificate.Subject -like """CN=Cloudyne Systems (Scheibling Consulting AB)*""" } `; exit -not $sig
 	RunWait, powershell.exe -NoProfile -Command %Cmd%,, Hide
