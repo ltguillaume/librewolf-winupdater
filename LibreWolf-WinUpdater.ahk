@@ -216,7 +216,7 @@ CheckPaths() {
 		IniRead, Path, %IniFile%, Settings, Path, 0	; Need to use 0, because False would become a string
 		If (!Path) {
 			RegRead, Path, HKLM\SOFTWARE\Clients\StartMenuInternet\%Browser%\shell\open\command
-			If (ErrorLevel)
+			If (ErrorLevel Or !InStr(Path, "librewolf.exe"))
 				Path := ProgramW6432 "\" Browser "\" BrowserExe
 		}
 		Path := Trim(Path, """")	; FileExist chokes on double quotes
