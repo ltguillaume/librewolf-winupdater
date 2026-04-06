@@ -24,15 +24,16 @@ jobs:
 
       - name: Set up Ahk2Exe
         run: |
-          wget https://github.com/AutoHotkey/AutoHotkey/releases/download/v1.1.37.02/AutoHotkey_1.1.37.02.zip -q
-          unzip AutoHotkey_1.1.37.02.zip Compiler/*
-          rm AutoHotkey_1.1.37.02.zip
+          wget -qO ahk.zip https://github.com/AutoHotkey/AutoHotkey/releases/download/v1.1.37.02/AutoHotkey_1.1.37.02.zip
+          echo "6f3663f7cdd25063c8c8728f5d9b07813ced8780522fd1f124ba539e2854215f ahk.zip" | sha256sum -c || exit 1
+          unzip ahk.zip Compiler/*
+          rm ahk.zip
 
       - name: Set up Resource Hacker
         run: |
-          wget https://www.angusj.com/resourcehacker/resource_hacker.zip -q
-          unzip resource_hacker.zip ResourceHacker.exe -d Compiler
-          rm resource_hacker.zip
+          wget -qO rh.zip https://www.angusj.com/resourcehacker/resource_hacker.zip
+          unzip rh.zip ResourceHacker.exe -d Compiler
+          rm rh.zip
 
       - name: Build executable
         run: |
@@ -82,7 +83,7 @@ jobs:
           done
 
       - name: Create Release
-        uses: actions/forgejo-release@v2.11.2
+        uses: actions/forgejo-release@v2.11.3
         with:
           direction: upload
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
@@ -96,9 +97,10 @@ jobs:
           release-notes: |
             - [x] 
             
-            > [!CAUTION]
-            > Some antivirus software will mark this as malware. [This is a false positive](https://www.autohotkey.com/docs/v1/FAQ.htm#Virus). Please report the program as safe if possible. _Known problematic vendors: Arctic Wolf, DeepInstinct, Gridinsoft, NANO-Antivirus, SecureAge, Skyhigh (SWG), Trapmine, Trellix, VirIT, Zillya._
-            > [VirusTotal Report for this version](${{ env.VT_URL }})
-            
             > [!NOTE]
-            > The release checksum is signed and can be verified using GPG ([instructions](https://codeberg.org/ltguillaume/resources/src/branch/main/signing)).
+            > The release zip is signed and can be verified using GPG ([instructions](https://codeberg.org/ltguillaume/resources/src/branch/main/signing)).
+            > [Link to VirusTotal Report](${{ env.VT_URL }})
+            
+            > [!CAUTION]
+            > Some antivirus software might mark this as malware. [This is a false positive](https://www.autohotkey.com/docs/v1/FAQ.htm#Virus). Please report the program as safe if possible.
+            > <details><summary>Known problematic vendors</summary><em>Arctic Wolf, DeepInstinct, Gridinsoft, NANO-Antivirus, SecureAge, Skyhigh (SWG), Trapmine, Trellix, VirIT, Zillya.</em></details>

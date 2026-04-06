@@ -1,4 +1,4 @@
-; LibreWolf WinUpdater - https://codeberg.org/librewolf/librewolf-winupdater
+; LibreWolf WinUpdater - https://codeberg.org/librewolf/winupdater
 ;@Ahk2Exe-SetFileVersion 1.14.1
 ;@Ahk2Exe-SetProductVersion 1.14.1
 
@@ -23,7 +23,7 @@ Global Args       := ""
 , BrowserPortable := "LibreWolf\" BrowserExe
 , ConnectCheckUrl := "https://codeberg.org/api/v1/version"
 , ReleaseApiUrl   := "https://codeberg.org/api/v1/repos/librewolf/bsys6/releases/latest"
-, UpdaterApiUrl   := "https://codeberg.org/api/v1/repos/librewolf/librewolf-winupdater/releases/latest"
+, UpdaterApiUrl   := "https://codeberg.org/api/v1/repos/librewolf/winupdater/releases/latest"
 , SetupParams     := "/D={}"
 , TaskCreateFile  := "ScheduledTask-Create.ps1"
 , TaskRemoveFile  := "ScheduledTask-Remove.ps1"
@@ -189,7 +189,7 @@ Action(ItemName, GuiEvent, LinkIndex) {
 			If (LinkIndex = 2)
 				ItemName := "WinUpdater"
 
-			Url := "https://codeberg.org/librewolf/" Browser "-" StrReplace(ItemName, " Help") "#readme"
+			Url := "https://codeberg.org/librewolf/" StrReplace(ItemName, " Help") "#readme"
 			Try Run, %Url%
 			Catch {
 				RegRead, DefBrowser, HKCR, .html

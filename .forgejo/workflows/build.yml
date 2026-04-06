@@ -23,15 +23,16 @@ jobs:
 
       - name: Set up Ahk2Exe
         run: |
-          wget https://github.com/AutoHotkey/AutoHotkey/releases/download/v1.1.37.02/AutoHotkey_1.1.37.02.zip -q
-          unzip AutoHotkey_1.1.37.02.zip Compiler/*
-          rm AutoHotkey_1.1.37.02.zip
+          wget -qO ahk.zip https://github.com/AutoHotkey/AutoHotkey/releases/download/v1.1.37.02/AutoHotkey_1.1.37.02.zip
+          echo "6f3663f7cdd25063c8c8728f5d9b07813ced8780522fd1f124ba539e2854215f ahk.zip" | sha256sum -c || exit 1
+          unzip ahk.zip Compiler/*
+          rm ahk.zip
 
       - name: Set up Resource Hacker
         run: |
-          wget https://www.angusj.com/resourcehacker/resource_hacker.zip -q
-          unzip resource_hacker.zip ResourceHacker.exe -d Compiler
-          rm resource_hacker.zip
+          wget -qO rh.zip https://www.angusj.com/resourcehacker/resource_hacker.zip
+          unzip rh.zip ResourceHacker.exe -d Compiler
+          rm rh.zip
 
       - name: Build executable
         run: |
