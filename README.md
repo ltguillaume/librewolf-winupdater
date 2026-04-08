@@ -14,7 +14,8 @@ An attempt to make updating LibreWolf for Windows much easier.
   Alternatively, you can download and extract the latest [`LibreWolf-WinUpdater_x.x.x.zip`](https://codeberg.org/librewolf/winupdater/releases) to a like `%AppData%\LibreWolf\WinUpdater`. Run `LibreWolf-WinUpdater.exe` to check for an update. If one is available, it will be downloaded immediately.
 
 ## Scheduled updates
-- Run LibreWolf WinUpdater and select the option to automatically check for updates. This will prompt for administrator permissions and a blue (PowerShell) window will notify you of the result. The scheduled task will run while the current user account is logged on (at start-up and every 4 hours).
+- When installing LibreWolf, selecting the option `Schedule Automatic Updates` does automatically what's described in the point below.
+- Run LibreWolf WinUpdater and select the option to automatically check for updates. This will prompt for administrator permissions and a blue (PowerShell) window will notify you of the result. The scheduled task will run while the _current_ user account is logged in (at 1 minute after login, and every 4 hours).
 - If your account has administrator permissions, the update will be fully automatic. If not, the update will be downloaded and you will be asked by WinUpdater to start the update (administrator permissions required).  
 - If LibreWolf is already running, the updater will notify you of the new version. The update will start as soon as you close the browser.
 
@@ -25,12 +26,12 @@ An attempt to make updating LibreWolf for Windows much easier.
   NoSigChecks=1
   ```
 - If you set up scheduled updates, you might get annoyed by some __anti-cheat software__. It may wrongfully point at WinUpdater, because it is built upon AutoHotkey, which _can_ be used to cheat in games. If this happens, you can either:
-  1. Open the __Task Scheduler__ via the Start menu, then double-click on `LibreWolf WinUpdater...` in the `Task Scheduler Library`, open the `Triggers` tab, then click on `One time` and the button `Delete`. Then press `OK` to make the change to _only check for updates 1 minute after logging on_ (and not every 4 hours). This will still cause issues if you leave games opened when locking your user account, though.
+  1. Open the __Task Scheduler__ via the Start menu, then double-click on `LibreWolf WinUpdater...` in the `Task Scheduler Library`, open the `Triggers` tab, then click on `One time` and the button `Delete`. Then press `OK` to make the change to _only check for updates 1 minute after login_ (and not every 4 hours). This will still cause issues if you leave games opened when locking your user account, though.
   2. Create a shortcut to `%AppData%\LibreWolf\WinUpdater\LibreWolf-Winupdater.exe /RemoveTask` and one to `%AppData%\LibreWolf\WinUpdater\LibreWolf-Winupdater.exe /CreateTask` (on your desktop), so you can quickly prevent WinUpdater from running during gameplay and reactivate it afterwards. Just put them next to the shortcuts of your game launchers and you won't forget.
 - If you're having issues with the updater on __Windows 7__  (not officially supported by LibreWolf anymore), please have a look at [these instructions](https://codeberg.org/librewolf/winupdater/issues/15).
 
 ## Remarks
-- The updater needs to be able to write to `LibreWolf-WinUpdater.ini` in its own folder, (so make sure it has permission to do so), otherwise WinUpdater will copy itself to `%AppData%\LibreWolf\WinUpdater` and run from there.
+- The updater needs to be able to write to `LibreWolf-WinUpdater.ini` in its own folder (so make sure it has permission to do so), otherwise WinUpdater will copy itself to `%AppData%\LibreWolf\WinUpdater` and run from there.
 - `LibreWolf-WinUpdater.ini` contains a `[Log]` section that shows the results of the last update check and update action.
 - Windows may show a `Security Alert: Revocation information for the Security certificate for this site is not available` dialog _without the context that WinUpdater tried to make this connection_. This can happen because you have enabled the non-default option `Check for server certificate revocation` in the Windows `Internet Options` (tab `Advanced`). However, WinUpdater should show you a dialog on top of that, asking you if you still want to continue. If this happens often, you can tell WinUpdater to automatically continue when this dialog pops up by setting `IgnoreCrlErrors` to `1` in the .ini file under `[Settings]`:
   ```ini
