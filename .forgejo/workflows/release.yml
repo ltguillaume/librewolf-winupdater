@@ -37,7 +37,7 @@ jobs:
 
       - name: Build executable
         run: |
-          xvfb-run wine Compiler/Ahk2Exe.exe /in ${{ env.APP_FILE }}.ahk
+          xvfb-run wine Compiler/Ahk2Exe.exe /silent verbose /in ${{ env.APP_FILE }}.ahk
 
       - name: Sign executable with OSSign
         if: ${{ secrets.OSSIGN_CONFIG != '' }}
@@ -47,6 +47,7 @@ jobs:
           ossign -t pecoff -o ${{ env.APP_FILE }}.exe ${{ env.APP_FILE }}.exe
 
       - id: virustotal
+        if: ${{ secrets.VT_API_KEY != '' }}
         name: Scan with VirusTotal
         uses: https://github.com/crazy-max/ghaction-virustotal@v5
         with:
@@ -55,6 +56,7 @@ jobs:
             ./${{ env.APP_FILE }}.exe
 
       - name: Get VirusTotal URL
+        if: ${{ secrets.VT_API_KEY != '' }}
         env:
           ANALYSIS: ${{ steps.virustotal.outputs.analysis }}
         run: |
