@@ -694,7 +694,7 @@ Download(URL) {
 	Try {
 		Object := ComObjCreate("Msxml2.XMLHTTP")
 		Object.open("GET", URL, false)
-		Object.setRequestHeader("User-Agent", "AutoHotkey")
+		Object.setRequestHeader("User-Agent", "WinUpdater")
 		Object.send()
 		Result := Object.responseText
 ;MsgBox, %Result%
