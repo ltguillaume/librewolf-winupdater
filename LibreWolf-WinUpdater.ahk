@@ -1,6 +1,6 @@
 ; LibreWolf WinUpdater - https://codeberg.org/librewolf/winupdater
-;@Ahk2Exe-SetFileVersion 1.14.1
-;@Ahk2Exe-SetProductVersion 1.14.1
+;@Ahk2Exe-SetFileVersion 1.14.2
+;@Ahk2Exe-SetProductVersion 1.14.2
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -665,10 +665,11 @@ Exit(Restart = False) {
 ; Helper functions
 
 Die(Error, Var = False, Show = True) {
+	Msg := Error
 	If (Var)
-		Msg := StrReplace(Error, "{}", Var)
-	Msg := StrReplace(Error, "{Task}", Task)
-	Log("LastResult", Error)
+		Msg := StrReplace(Msg, "{}", Var)
+	Msg := StrReplace(Msg, "{Task}", Task)
+	Log("LastResult", Msg)
 	GuiControl, Hide, ProgField
 	GuiControl, Hide, LogField
 	GuiControl, Disable, TaskSetField
