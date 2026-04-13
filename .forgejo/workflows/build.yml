@@ -25,18 +25,19 @@ jobs:
         run: |
           wget -qO ahk.zip https://github.com/AutoHotkey/AutoHotkey/releases/download/v1.1.37.02/AutoHotkey_1.1.37.02.zip
           echo "6f3663f7cdd25063c8c8728f5d9b07813ced8780522fd1f124ba539e2854215f ahk.zip" | sha256sum -c || exit 1
-          unzip ahk.zip Compiler/*
+          unzip -j ahk.zip Compiler/Ahk2Exe.exe "Compiler/Unicode 32-bit.bin"
           rm ahk.zip
 
       - name: Set up Resource Hacker
         run: |
           wget -qO rh.zip https://www.angusj.com/resourcehacker/resource_hacker.zip
-          unzip rh.zip ResourceHacker.exe -d Compiler
+          unzip rh.zip ResourceHacker.exe
+          echo "14a44fe31b04fbcc65e94e80016138a2e9fc9bb6dfcea09b98de57f8a22a1240 ResourceHacker.exe" | sha256sum -c || exit 1
           rm rh.zip
 
       - name: Build executable
         run: |
-          xvfb-run wine Compiler/Ahk2Exe.exe /silent verbose /in ${{ env.APP_FILE }}.ahk
+          xvfb-run wine Ahk2Exe.exe /silent verbose /in ${{ env.APP_FILE }}.ahk
 
       - name: Sign executable with OSSign
         if: ${{ secrets.OSSIGN_CONFIG != '' }}
