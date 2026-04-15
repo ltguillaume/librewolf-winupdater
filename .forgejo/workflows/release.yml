@@ -19,8 +19,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y nodejs zip ossign
 
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - name: Check out repository
+        uses: actions/checkout@v6
 
       - name: Set up Ahk2Exe
         run: |
