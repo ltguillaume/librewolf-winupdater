@@ -98,6 +98,8 @@ If (ThisUpdaterRunning())
 	Die(_IsRunningError,, !Scheduled)	; Show only if not scheduled
 Unelevate()
 CheckWriteAccess()
+If (SettingTask Or !A_Args.Length())	; No arguments: when not running as portable or as a scheduled task
+	GuiShow()
 If (SettingTask)
 	TaskSet()
 CheckConnection()
@@ -153,7 +155,6 @@ Init() {
 			Gui, Add, CheckBox, vTaskSetField gTaskSet x15 y+10 w290 cBCBCBC Center Check3 -Tabstop, % StrReplace(_SetTask, "{}", A_UserName)
 			TaskCheck()
 		}
-		GuiShow()
 	}
 
 	HotKey, IfWinActive, ahk_id %GuiHwnd%
