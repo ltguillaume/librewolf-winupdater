@@ -1,6 +1,6 @@
 ; LibreWolf WinUpdater - https://codeberg.org/librewolf/winupdater
-;@Ahk2Exe-SetFileVersion 1.14.2
-;@Ahk2Exe-SetProductVersion 1.14.2
+;@Ahk2Exe-SetFileVersion 1.14.3
+;@Ahk2Exe-SetProductVersion 1.14.3
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -49,6 +49,7 @@ Global _Updater       := Browser " WinUpdater"
 , _IsRunningError     := _Updater " is already running."
 , _IsElevated         := "To set up scheduled tasks properly, please do not run WinUpdater as administrator."
 , _NoDefaultBrowser   := "Could not open your default browser."
+, _SelfUpdating       := "Downloading new WinUpdater version..."
 , _Checking           := "Checking for new version..."
 , _SetTask            := "Schedule a task for automatic update checks while`nuser {} is logged on."
 , _SettingTask        := (A_Args[1] = "/CreateTask" ? "Creating" : "Removing") " scheduled task..."
@@ -277,6 +278,7 @@ SelfUpdate() {
 	If (!DownloadInfo1 Or !DownloadInfo2)
 		Return Log("SelfUpdate", _FindUrlError, True)
 
+	Progress(_SelfUpdating)
 	PreventShutdown()
 
 ;MsgBox, %DownloadInfo1%`n%DownloadInfo2%
