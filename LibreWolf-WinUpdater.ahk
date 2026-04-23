@@ -632,7 +632,7 @@ Exit(Restart = False) {
 ; Clean up
 	Log("LastRun",, True)
 	SetWorkingDir, %WorkDir%
-	If (SetupFile And (!Died Or Died = _DownloadSetupError Or Died = _ChecksumMatchError)) {
+	If (SetupFile And (!Died Or Died = _DownloadSetupError Or Died = _ChecksumMatchError Or Died = _SignatureErrorExit)) {
 		Sleep, 2000
 		FileDelete, %SetupFile%
 	}
