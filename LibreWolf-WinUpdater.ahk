@@ -269,49 +269,6 @@ ThisUpdaterRunning() {
 	}
 }
 
-SelfUpdate() {
-	Task := _Updater
-;MsgBox, % GetLatestVersion() " > " CurrentUpdaterVersion
-	If (!VerCompare(GetLatestVersion(), ">" CurrentUpdaterVersion))
-		Return
-
-	RegExMatch(ReleaseInfo, "i)""name"":\s*""(" Browser "-WinUpdater.{1,15}\.zip)"".*?""browser_download_url"":\s*""(.+?)""", DownloadInfo)
-	If (!DownloadInfo1 Or !DownloadInfo2)
-		Return Log("SelfUpdate", _FindUrlError, True)
-
-	Progress(_SelfUpdating)
-	PreventShutdown()
-
-;MsgBox, %DownloadInfo1%`n%DownloadInfo2%
-	SelfUpdateZip := DownloadInfo1
-	DownloadUrl := DownloadInfo2
-	UrlDownloadToFile, %DownloadUrl%, %SelfUpdateZip%
-	If (ErrorLevel Or !FileExist(SelfUpdateZip))
-		Return Log("SelfUpdate", _DownloadSelfError, True)
-;MsgBox, Extracting %SelfUpdateZip%
-	VerifyChecksum(SelfUpdateZip)
-
-	FileMove, %A_ScriptFullPath%, %A_ScriptFullPath%.wubak, 1
-	If (!Extract(WorkDir "\" SelfUpdateZip, A_ScriptDir))
-		Return Log("SelfUpdate", _ExtractionError, True)
-
-	FileDelete, %SelfUpdateZip%
-	If (IsPortable) {
-		FileDelete, %A_ScriptDir%\%TaskCreateFile%
-		FileDelete, %A_ScriptDir%\%TaskRemoveFile%
-	}
-
-	If (!FileExist(A_ScriptDir "\" UpdaterFile))
-		Die(_ExtractionError)
-	CheckSignature(A_ScriptDir "\" UpdaterFile)
-
-	If (A_ScriptName <> UpdaterFile)
-		FileMove, %A_ScriptDir%\%UpdaterFile%, %A_ScriptFullPath%
-
-	Run, %A_ScriptFullPath% %Args%
-	ExitApp
-}
-
 CheckWriteAccess() {
 	If (!FileExist(A_ScriptDir "\" BrowserExe)) {
 		FileAppend,, %IniFile%
@@ -398,6 +355,49 @@ CheckConnection() {
 ;MsgBox, %Title%
 		Die(_NoConnectionError Title,, !Scheduled)	; Show only if not scheduled
 	}
+}
+
+SelfUpdate() {
+	Task := _Updater
+;MsgBox, % GetLatestVersion() " > " CurrentUpdaterVersion
+	If (!VerCompare(GetLatestVersion(), ">" CurrentUpdaterVersion))
+		Return
+
+	RegExMatch(ReleaseInfo, "i)""name"":\s*""(" Browser "-WinUpdater.{1,15}\.zip)"".*?""browser_download_url"":\s*""(.+?)""", DownloadInfo)
+	If (!DownloadInfo1 Or !DownloadInfo2)
+		Return Log("SelfUpdate", _FindUrlError, True)
+
+	Progress(_SelfUpdating)
+	PreventShutdown()
+
+;MsgBox, %DownloadInfo1%`n%DownloadInfo2%
+	SelfUpdateZip := DownloadInfo1
+	DownloadUrl := DownloadInfo2
+	UrlDownloadToFile, %DownloadUrl%, %SelfUpdateZip%
+	If (ErrorLevel Or !FileExist(SelfUpdateZip))
+		Return Log("SelfUpdate", _DownloadSelfError, True)
+;MsgBox, Extracting %SelfUpdateZip%
+	VerifyChecksum(SelfUpdateZip)
+
+	FileMove, %A_ScriptFullPath%, %A_ScriptFullPath%.wubak, 1
+	If (!Extract(WorkDir "\" SelfUpdateZip, A_ScriptDir))
+		Return Log("SelfUpdate", _ExtractionError, True)
+
+	FileDelete, %SelfUpdateZip%
+	If (IsPortable) {
+		FileDelete, %A_ScriptDir%\%TaskCreateFile%
+		FileDelete, %A_ScriptDir%\%TaskRemoveFile%
+	}
+
+	If (!FileExist(A_ScriptDir "\" UpdaterFile))
+		Die(_ExtractionError)
+	CheckSignature(A_ScriptDir "\" UpdaterFile)
+
+	If (A_ScriptName <> UpdaterFile)
+		FileMove, %A_ScriptDir%\%UpdaterFile%, %A_ScriptFullPath%
+
+	Run, %A_ScriptFullPath% %Args%
+	ExitApp
 }
 
 GetNewVersion() {
