@@ -63,6 +63,7 @@ jobs:
         run: |
           VT_URL=$(echo "${ANALYSIS}" | grep -oP ".*exe=\K.*")
           echo "VT_URL=${VT_URL}" >> $GITHUB_ENV
+          echo "${VT_URL}"
 
       - name: Create zip
         run: |
@@ -89,8 +90,7 @@ jobs:
         uses: actions/forgejo-release@v2.11.3
         with:
           direction: upload
-          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
-          gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
+          gpg-private-key: ${{ secrets.WINDOWS_PRIVATE_KEY }}
           token: ${{ secrets.FORGE_TOKEN }}
           tag: ${{ env.APP_VERSION }}
           title: ${{ env.APP_NAME }} ${{ env.APP_VERSION }}
@@ -99,11 +99,14 @@ jobs:
           release-dir: dist
           release-notes: |
             - [x] 
+            - [x] 
+            - [x] 
             
             > [!NOTE]
-            > The release zip is signed and can be verified using GPG ([instructions](https://codeberg.org/ltguillaume/resources/src/branch/main/signing)).
-            > [Link to VirusTotal Report](${{ env.VT_URL }})
+            > The authenticity of the release `.zip` can be verified using GPG.
+            > Import our key: `gpg --import [librewolf].asc` (available via [gpg.librewolf.net](https://gpg.librewolf.net), [keys.openpgp.org](https://keys.openpgp.org/search?q=gpg%40librewolf.net), [keyserver.ubuntu.com](https://keyserver.ubuntu.com/pks/lookup?search=gpg%40librewolf.net&op=index)), then verify: `gpg --verify ${{ env.APP_FILE }}.zip.asc`.
             
             > [!CAUTION]
+            > [Link to VirusTotal Report](${{ env.VT_URL }})
             > Some antivirus software might mark this as malware. [This is a false positive](https://www.autohotkey.com/docs/v1/FAQ.htm#Virus). Please report the program as safe if possible.
             > <details><summary>Known problematic vendors</summary><em>Arctic Wolf, DeepInstinct, Gridinsoft, NANO-Antivirus, SecureAge, Skyhigh (SWG), Trapmine, Trellix, VirIT, Zillya.</em></details>
