@@ -1,6 +1,6 @@
 ; LibreWolf WinUpdater - https://codeberg.org/librewolf/winupdater
-;@Ahk2Exe-SetFileVersion 1.14.3
-;@Ahk2Exe-SetProductVersion 1.14.3
+;@Ahk2Exe-SetFileVersion 1.14.4
+;@Ahk2Exe-SetProductVersion 1.14.4
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -497,7 +497,7 @@ CheckSignature(File) {
 	If (NoSigChecks)
 		Return
 	; Check if the file is correctly signed by the the right signer
-	Cmd = $sig = Get-AuthenticodeSignature """%File%""" | Where-Object { $_.Status -eq """Valid""" -and $_.SignerCertificate.Subject -like """CN=Cloudyne Systems (Scheibling Consulting AB)*""" } `; exit -not $sig
+	Cmd = $sig = Get-AuthenticodeSignature """%File%""" | Where-Object { $_.Status -eq """Valid""" -and $_.SignerCertificate.Subject -like """CN=OSSign (Scheibling Consulting AB)*L=Uppsala*""" } `; exit -not $sig
 	RunWait, powershell.exe -NoProfile -Command %Cmd%,, Hide
 ;MsgBox, Signature for:`n%File%`nWrong signature = %ErrorLevel%
 	If (ErrorLevel) {
