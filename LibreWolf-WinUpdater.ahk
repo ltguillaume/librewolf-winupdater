@@ -420,28 +420,7 @@ StartUpdate() {
 	If (Portable Or !Scheduled)
 		GuiShow()
 
-	BrowserWaitClose()
 	DownloadUpdate()
-}
-
-BrowserWaitClose() {
-	; Notify and wait if browser is running
-	PathDS := StrReplace(Path, "\", "\\")
-	Wait:
-	For Proc in ComObjGet("winmgmts:").ExecQuery("Select ProcessId from Win32_Process where ExecutablePath=""" PathDS """") {
-		If (!Notified) {
-			Progress(_NewVersionFound)
-			Notify(_NewVersionFound)
-			Notified := True
-		}
-		ClearMem()
-		Process, WaitClose, % Proc.ProcessId
-		Goto, Wait
-	}
-
-	; Check for newer version since notification was shown
-	If (Notified And GetNewVersion())
-		BrowserWaitClose()
 }
 
 ClearMem() {
@@ -471,7 +450,28 @@ DownloadUpdate() {
 	If (ErrorLevel Or !FileExist(SetupFile))
 		Die(_DownloadSetupError)
 
+	BrowserWaitClose()
 	VerifyChecksum(SetupFile)
+}
+
+BrowserWaitClose() {
+	; Notify and wait if browser is running
+	PathDS := StrReplace(Path, "\", "\\")
+	Wait:
+	For Proc in ComObjGet("winmgmts:").ExecQuery("Select ProcessId from Win32_Process where ExecutablePath=""" PathDS """") {
+		If (!Notified) {
+			Progress(_NewVersionFound)
+			Notify(_NewVersionFound)
+			Notified := True
+		}
+		ClearMem()
+		Process, WaitClose, % Proc.ProcessId
+		Goto, Wait
+	}
+
+	; Check for newer version since notification was shown
+	If (Notified And GetNewVersion())
+		BrowserWaitClose()
 }
 
 VerifyChecksum(File) {
@@ -648,7 +648,7 @@ Exit(Restart = False) {
 ; Clean up
 	Log("LastRun",, True)
 	SetWorkingDir, %WorkDir%
-	If (SetupFile And (!Died Or Died = _DownloadSetupError Or Died = _ChecksumMatchError Or Died = _SignatureErrorExit)) {
+	If (SetupFile And (Done Or Died = _DownloadSetupError Or Died = _ChecksumMatchError Or Died = _SignatureErrorExit)) {
 		Sleep, 2000
 		FileDelete, %SetupFile%
 	}
@@ -943,10 +943,9 @@ Progress(Msg, End = False) {
 		GuiControl,, ProgField, 100
 	Else If (Msg <> _NewVersionFound)
 		GuiControl,, ProgField, +15
-	Menu, Tray, Tip, %_Updater% %CurrentUpdaterVersion%`n%Folder%`n`n%Msg%
 
-	GuiControlGet, Prog,, ProgField
-	Done := Prog >= 100
+	Menu, Tray, Tip, %_Updater% %CurrentUpdaterVersion%`n%Folder%`n`n%Msg%
+	Done := End
 }
 
 TaskCheck() {
