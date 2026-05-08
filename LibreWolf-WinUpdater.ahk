@@ -1,6 +1,6 @@
 ; LibreWolf WinUpdater - https://codeberg.org/librewolf/winupdater
-;@Ahk2Exe-SetFileVersion 1.14.6
-;@Ahk2Exe-SetProductVersion 1.14.6
+;@Ahk2Exe-SetFileVersion 1.15.0
+;@Ahk2Exe-SetProductVersion 1.15.0
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -568,7 +568,7 @@ ExtractPortable() {
 
 	Loop, Files, *, R
 	{
-		If (A_LoopFileName = UpdaterFile)
+		If (A_LoopFileName = BrowserExe Or A_LoopFileName = UpdaterFile)
 			Continue
 		FileGetSize, CurrentFileSize, %A_ScriptDir%\%A_LoopFilePath%
 ;MsgBox, % A_LoopFilePath "`n" A_LoopFileSize "`n" CurrentFileSize "`n" Hash(A_LoopFilePath) "`n" Hash(A_ScriptDir "\" A_LoopFilePath)
@@ -582,6 +582,9 @@ ExtractPortable() {
 			ChangesMade := True
 		}
 	}
+	FileMove, %Browser%\%BrowserExe%, %Path%, 1
+	If (ErrorLevel)
+		Die(_MoveToTargetError, BrowserExe)
 
 	SetWorkingDir, %WorkDir%
 	WriteReport()
