@@ -9,15 +9,15 @@ An attempt to make updating LibreWolf for Windows much easier.
 
 ## Getting started
 ### LibreWolf Setup
-- When installing LibreWolf, the [official installer](https://librewolf.net/installation/windows/) will show an option to install LibreWolf WinUpdater. On first run, it will copy itself to `%AppData%\LibreWolf\WinUpdater` to be able to update itself without administrator privileges.  
+- When installing LibreWolf, the [official installer](https://librewolf.net/installation/windows/) will show an option to install LibreWolf WinUpdater. On first run, it will copy itself to `%AppData%\LibreWolf\WinUpdater` to be able to update itself without administrator privileges.
 - Alternatively, you can download and extract the latest [`LibreWolf-WinUpdater_x.x.x.zip`](https://codeberg.org/librewolf/winupdater/releases), then run `LibreWolf-WinUpdater.exe` to check for an update. If one is available, it will be downloaded immediately.
 ### LibreWolf Portable
 - If you want to run the portable version of LibreWolf, download and extract [`librewolf-xxx.x.x-windows-x86_64-portable.zip`](https://librewolf.net/installation/windows/) (second blue button). It already contains WinUpdater.
-- LibreWolf will be updated automatically whenever you run `LibreWolf-Portable.exe`  (checks for new versions happen once a day). If you only wish to perform update checks manually, just rename WinUpdater to e.g. `LibreWolf-ManualUpdater.exe` and run it whenever you like.
+- LibreWolf will be updated automatically whenever you run `LibreWolf-Portable.exe` (checks for new versions happen once a day). If you only wish to perform update checks manually, just rename WinUpdater to e.g. `LibreWolf-ManualUpdater.exe` and run it whenever you like.
 ### Scheduled updates
 - When __installing LibreWolf__, select the option `Schedule Automatic Updates` to automatically set up what's described in the point below.
 - You can run LibreWolf WinUpdater to enable the option `Schedule a task for automatic update checks`. This will prompt for administrator permissions and a blue (PowerShell) window will notify you of the result. The scheduled task will run while the __current user account__ is logged in (at 1 minute after login, and every 4 hours).
-- If your account has __administrator permissions__, the update will be fully automatic. If not, the update will be downloaded and you will be asked to start the update (administrator permissions required).  
+- If your account has __administrator permissions__, the update will be fully automatic. If not, the update will be downloaded and you will be asked to start the update (administrator permissions required).
 - If LibreWolf is already __running__, you will be notified about the new version. The update will start as soon as you close the browser.
 
 ## Settings
@@ -36,7 +36,7 @@ If for some reason WinUpdater is not able to use the user's default `%Temp%` fol
 [Settings]
 WorkDir=D:\Temp
 ```
-To specify the directory of `LibreWolf-WinUpdater.exe`, use `WorkDir=.`.
+To specify the directory of `LibreWolf-WinUpdater.exe`, use `WorkDir=.`, or use a relative subfolder like `WorkDir=.\Temp`.
 
 ## Issues
 ### Anti-cheat software
