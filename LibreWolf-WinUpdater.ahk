@@ -1,6 +1,6 @@
 ; LibreWolf WinUpdater - https://codeberg.org/librewolf/winupdater
-;@Ahk2Exe-SetFileVersion 1.15.0
-;@Ahk2Exe-SetProductVersion 1.15.0
+;@Ahk2Exe-SetFileVersion 1.15.1
+;@Ahk2Exe-SetProductVersion 1.15.1
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -238,8 +238,10 @@ CheckPaths() {
 	Folder := StrReplace(Path, "\" BrowserExe)
 	Menu, Tray, Tip, %_Updater% %CurrentUpdaterVersion%`n%Folder%
 
-	If (WorkDir = ".")
-		WorkDir := A_ScriptDir
+	If (SubStr(WorkDir, 1, 1) = ".")
+		WorkDir := A_ScriptDir . SubStr(WorkDir, 2)
+	If (WorkDir <> "" And !FileExist(WorkDir))
+		FileCreateDir, %WorkDir%
 	If (WorkDir = "" Or !InStr(FileExist(WorkDir), "D"))
 		WorkDir := A_Temp
 	ExtractDir := WorkDir "\" Browser "-Extracted"
