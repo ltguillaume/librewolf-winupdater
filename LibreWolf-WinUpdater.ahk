@@ -1,6 +1,6 @@
 ; LibreWolf WinUpdater - https://codeberg.org/librewolf/winupdater
-;@Ahk2Exe-SetFileVersion 1.15.1
-;@Ahk2Exe-SetProductVersion 1.15.1
+;@Ahk2Exe-SetFileVersion 1.15.2
+;@Ahk2Exe-SetProductVersion 1.15.2
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -424,14 +424,17 @@ GetUpdate() {
 
 	Download:
 	DownloadUpdate()
-	BrowserWaitClose()
-
-	If (VerCompare(GetNewVersion(), ">" NewVersion)) {	; Check for newer version since download
-;MsgBox, Redownloading newer version %NewVersion%
-		FileDelete, %SetupFile%
-		Goto, Download
-	}
 	Verify(SetupFile)
+	Waited := BrowserWaitClose()
+
+	If (Waited) {
+		If (VerCompare(GetNewVersion(), ">" NewVersion)) {	; Check for newer version since download
+			FileDelete, %SetupFile%
+			Goto, Download
+		} Else
+			Verify(SetupFile, False)	; Verify hash (only) to make sure the setup file hasn't been tampered with since download
+	}
+
 	RunUpdate()
 }
 
@@ -459,9 +462,8 @@ DownloadUpdate() {
 
 BrowserWaitClose() {
 	; Notify and wait if browser is running
-	PathDS := StrReplace(Path, "\", "\\")
 	Wait:
-	For Proc in ComObjGet("winmgmts:").ExecQuery("Select ProcessId from Win32_Process where ExecutablePath=""" PathDS """") {
+	For Proc in ComObjGet("winmgmts:").ExecQuery("Select ProcessId from Win32_Process where ExecutablePath=""" StrReplace(Path, "\", "\\") """") {
 		If (!Notified) {
 			Progress(_NewVersionFound)
 			Notify(_NewVersionFound)
@@ -471,6 +473,8 @@ BrowserWaitClose() {
 		Process, WaitClose, % Proc.ProcessId
 		Goto, Wait
 	}
+	
+	Return Notified
 }
 
 ReleaseMem() {
@@ -479,7 +483,7 @@ ReleaseMem() {
 	DllCall("CloseHandle", "Int", Proc)
 }
 
-Verify(File) {
+Verify(File, Signature = True) {
 	; Get checksum file
 	RegEx := "i)""name"":\s*""" (Task = _Updater ? Browser "-WinUpdater.+?\.sha256" : "sha256sums\.txt") """.*?""browser_download_url"":\s*""(.+?)"""
 	RegExMatch(ReleaseInfo, RegEx, ChecksumUrl)
@@ -498,12 +502,12 @@ Verify(File) {
 	If (Checksum1 <> Hash(File))
 		Die(_ChecksumMatchError, File)
 
-	If (SubStr(File, -3) = ".exe")
+	If (Signature And SubStr(File, -3) = ".exe")
 		CheckSignature(File)
 }
 
 CheckSignature(File) {
-	If (NoSigChecks)
+	If (NoSigChecks Or ShutdownBlocked)	; During a blocked shutdown, the signature checks will always fail
 		Return
 	; Check if the file is correctly signed by the the right signer
 	Cmd = $sig = Get-AuthenticodeSignature """%File%""" | Where-Object { $_.Status -eq """Valid""" -and $_.SignerCertificate.Subject -like """CN=*(Scheibling Consulting AB)*L=Uppsala*""" } `; exit -not $sig
