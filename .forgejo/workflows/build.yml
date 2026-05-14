@@ -40,9 +40,9 @@ jobs:
           xvfb-run wine Ahk2Exe.exe /silent verbose /in ${{ env.APP_FILE }}.ahk
 
       - name: Sign executable with OSSign
-        if: ${{ secrets.OSSIGN_CONFIG != '' }}
+        if: ${{ secrets.OSSIGN_CONFIG_CLOUDYNE != '' }}
         env:
-          OSSIGN_CONFIG: ${{ secrets.OSSIGN_CONFIG }}
+          OSSIGN_CONFIG: ${{ secrets.OSSIGN_CONFIG_CLOUDYNE }}
         run: |
           ossign -t pecoff -o ${{ env.APP_FILE }}.exe ${{ env.APP_FILE }}.exe
 
