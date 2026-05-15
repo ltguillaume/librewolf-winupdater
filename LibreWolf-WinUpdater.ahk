@@ -1,6 +1,6 @@
 ; LibreWolf WinUpdater - https://codeberg.org/librewolf/winupdater
-;@Ahk2Exe-SetFileVersion 1.15.2
-;@Ahk2Exe-SetProductVersion 1.15.2
+;@Ahk2Exe-SetFileVersion 1.16.0
+;@Ahk2Exe-SetProductVersion 1.16.0
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -59,6 +59,9 @@ Global _Updater       := Browser " WinUpdater"
 , _SelectFileTitle    := _Updater " - Select " BrowserExe "..."
 , _WritePermError     := "Could not write to`n{}. Please check the current user account's write permissions for this folder."
 , _CopyError          := "Could not copy {}"
+, _32BitLW            := "LibreWolf does not provide a 32-bit build anymore."
+, _32BitOS            := "Consider using a 64-bit Windows installation if possible, or switch to Firefox 32-bit."
+, _SwitchTo64         := "Click Yes to switch to the 64-bit build or No to quit."
 , _GetBuildError      := "Could not determine the build type of " Browser "."
 , _GetVersionError    := "Could not determine the current version of`n{}"
 , _CrlError           := "The server certificate revocation check for {} has failed. Right-click on WinUpdater's tray icon, then ""WinUpdater Help"" for more info.`nContinue anyway?"
@@ -106,6 +109,7 @@ If (SettingTask)
 CheckConnection()
 If (UpdateSelf And A_IsCompiled)
 	SelfUpdate()
+SwitchTo64()
 If (GetNewVersion())
 	GetUpdate()
 Exit()
@@ -403,6 +407,19 @@ SelfUpdate() {
 	ExitApp
 }
 
+SwitchTo64() {
+	If (Build <> "i686")
+		Return
+	If (!A_Is64bitOS)
+		Die(_32BitLW " " _32BitOS)
+
+	MsgBox, 52, %_Updater%, %_32BitLW% %_SwitchTo64%
+	IfMsgBox, No
+		Die(_32BitLW)
+
+	Build := "x86_64"
+}
+
 GetNewVersion() {
 	Progress(_Checking)
 	Task := Browser
@@ -473,7 +490,7 @@ BrowserWaitClose() {
 		Process, WaitClose, % Proc.ProcessId
 		Goto, Wait
 	}
-	
+
 	Return Notified
 }
 
