@@ -1,6 +1,6 @@
 ; LibreWolf WinUpdater - https://codeberg.org/librewolf/winupdater
-;@Ahk2Exe-SetFileVersion 1.16.0
-;@Ahk2Exe-SetProductVersion 1.16.0
+;@Ahk2Exe-SetFileVersion 1.17.0
+;@Ahk2Exe-SetProductVersion 1.17.0
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -57,7 +57,7 @@ Global _Updater       := Browser " WinUpdater"
 , _Done               := " Done."
 , _GetPathError       := "Could not find the path to " Browser ".`nBrowse to " BrowserExe " in the following dialog."
 , _SelectFileTitle    := _Updater " - Select " BrowserExe "..."
-, _WritePermError     := "Could not write to`n{}. Please check the current user account's write permissions for this folder."
+, _WritePermError     := "Could not write to {}. Please check the current user account's write permissions for this folder."
 , _CopyError          := "Could not copy {}"
 , _32BitLW            := "LibreWolf does not provide a 32-bit build anymore."
 , _32BitOS            := "Consider using a 64-bit Windows installation if possible, or switch to Firefox 32-bit."
@@ -83,7 +83,7 @@ Global _Updater       := Browser " WinUpdater"
 , _Extracting         := "Extracting portable version..."
 , _StartUpdate        := "  &Start update  "
 , _Installing         := "Installing new version..."
-, _UpdateError        := "Error while updating."
+, _UpdateError        := "Error while updating{}."
 , _SilentUpdateError  := "Silent update did not complete.`nDo you want to run the interactive installer?"
 , _NewVersionFound    := "New version available.`nClose " Browser " to continue..."
 , _NoNewVersion       := "No new version found."
@@ -225,14 +225,14 @@ CheckPaths() {
 		IniRead, Path, %IniFile%, Settings, Path, 0	; Need to use 0, because False would become a string
 		If (!Path) {
 			RegRead, Path, HKLM\SOFTWARE\Clients\StartMenuInternet\%Browser%\shell\open\command
-			If (ErrorLevel Or !InStr(Path, "librewolf.exe"))
+			If (ErrorLevel Or !InStr(Path, BrowserExe))
 				Path := ProgramW6432 "\" Browser "\" BrowserExe
 		}
 		Path := Trim(Path, """")	; FileExist chokes on double quotes
 	}
 
 	If (FileExist(Path ".wubak")) {
-;MsgBox, Previous update may have been interrupted, restoring librewolf.exe.wubak
+;MsgBox, Previous update may have been interrupted, restoring %BrowserExe%.wubak
 		FileMove, %Path%.wubak, %Path%, 1
 		If (ErrorLevel And !A_IsAdmin And !Portable)
 			RunElevated()
@@ -463,6 +463,7 @@ DownloadUpdate() {
 ;MsgBox, Downloading`n%DownloadInfo2%`nto`n%DownloadInfo1%
 	If (!DownloadInfo1 Or !DownloadInfo2)
 		Die(_FindUrlError)
+
 	SetupFile := DownloadInfo1
 	DownloadUrl := DownloadInfo2
 
@@ -629,11 +630,11 @@ Install() {
 	Else {
 		MsgBox, 52, %_Updater%, %_SilentUpdateError%
 		IfMsgBox, No
-			Progress(_UpdateError, True)
+			Progress(StrReplace(_UpdateError, "{}"), True)
 		Else {
 			RunWait, %SetupFile% %SetupParams%,, UseErrorLevel
 			If (ErrorLevel)
-				Die(_UpdateError (ErrorLevel ? " " A_LastError : ""))
+				Die(StrReplace(_UpdateError, "{}", " (" A_LastError ")"))
 			Else
 				WriteReport()
 		}
@@ -713,6 +714,7 @@ Die(Error, Var = False, Show = True) {
 	GuiControl, Hide, LogField
 	GuiControl, Disable, TaskSetField
 	GuiControl, Hide, TaskSetField
+	GuiControl, Hide, UpdateButton
 	Gui, Font, s38
 	Gui, Add, Text, x264 y-2 cYellow, % Chr("0x26A0")
 	Gui, Font, s9
