@@ -732,8 +732,9 @@ Download(URL) {
 	CurrentDomain := SubStr(URL, 1, InStr(URL, "/",,, 3) - 1)
 	SetTimer, CrlCheck
 	Try {
+		Random, Num, 1, 1024
 		Object := ComObjCreate("Msxml2.XMLHTTP")
-		Object.open("GET", URL, false)
+		Object.open("GET", URL "?i=" Num, false)
 		Object.setRequestHeader("User-Agent", "WinUpdater")
 		Object.send()
 		Result := Object.responseText
