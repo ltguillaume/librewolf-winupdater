@@ -100,9 +100,11 @@ jobs:
           release-notes: |
             - [x] 
             - [x] 
-            - [x] 
             
             > [!NOTE]
+            > The executable is signed by `OSSign (Scheibling Consulting AB)`. For more information, see our [FAQ](https://librewolf.net/docs/faq/#who-is-ossign-scheibling-consulting-ab).
+            
+            > [!TIP]
             > The authenticity of the release `.zip` can be verified with GPG.
             > Import our key: `gpg --import [librewolf].asc` (available via [gpg.librewolf.net](https://gpg.librewolf.net), [keys.openpgp.org](https://keys.openpgp.org/search?q=gpg%40librewolf.net), [keyserver.ubuntu.com](https://keyserver.ubuntu.com/pks/lookup?search=gpg%40librewolf.net&op=index)), then verify: `gpg --verify ${{ env.APP_FILE }}.zip.asc`.
             
