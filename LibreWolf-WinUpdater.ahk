@@ -964,7 +964,7 @@ Log(Key, Msg = "", PrefixTime = False) {
 	Msg := StrReplace(Msg, "{Task}", Task)
 	If (PrefixTime) {
 		FormatTime, CurrentTime
-		Msg := CurrentTime " " Msg
+		Msg := CurrentTime (Msg ? " " Msg : "")
 	}
 	Msg := StrReplace(Msg, "`n", " ")
 	IniWrite, %Msg%, %IniFile%, Log, %Key%
