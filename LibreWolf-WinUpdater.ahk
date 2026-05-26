@@ -266,13 +266,25 @@ CheckPaths() {
 }
 
 ThisUpdaterRunning() {
-	Process, Exist	; Put launcher's process id into ErrorLevel
-	Query := "Select ProcessId from Win32_Process where ProcessId!=" ErrorLevel " and ExecutablePath=""" StrReplace(A_ScriptFullPath, "\", "\\") """"
+	CurrentProcess := DllCall("GetCurrentProcessId")
+	Query := "Select ProcessId from Win32_Process where ProcessId!=" CurrentProcess " and ExecutablePath=""" StrReplace(A_ScriptFullPath, "\", "\\") """"	; ExecutablePath from elevated processes can only be read if A_IsAdmin
 	For Process in ComObjGet("winmgmts:").ExecQuery(Query) {
 		Sleep, 1000
 		For Process in ComObjGet("winmgmts:").ExecQuery(Query)
 			Return True
 		Break
+	}
+
+	If (A_IsAdmin) {	; Make sure unelevated instances can know this instance is running
+		IniWrite, 1, %IniFile%, Log, RunningAsAdmin
+		OnExit("AdminExit")
+		Return False
+	}
+
+	Process, Exist, %UpdaterFile%	; Include elevated processes (no ExecutablePath filter)
+	If (ErrorLevel) {
+		IniRead, RunningAsAdmin, %IniFile%, Log, RunningAsAdmin, 0
+		Return RunningAsAdmin
 	}
 }
 
@@ -700,6 +712,10 @@ Exit(Restart = False) {
 	}
 
 	ExitApp
+}
+
+AdminExit() {
+	IniDelete, %IniFile%, Log, RunningAsAdmin
 }
 
 ; Helper functions
