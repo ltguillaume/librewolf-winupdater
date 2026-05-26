@@ -268,6 +268,8 @@ CheckPaths() {
 ThisUpdaterRunning() {
 	CurrentProcess := DllCall("GetCurrentProcessId")
 	Query := "Select ProcessId from Win32_Process where ProcessId!=" CurrentProcess " and ExecutablePath=""" StrReplace(A_ScriptFullPath, "\", "\\") """"	; ExecutablePath from elevated processes can only be read if A_IsAdmin
+
+	Detect:
 	For Process in ComObjGet("winmgmts:").ExecQuery(Query) {
 		Sleep, 1000
 		For Process in ComObjGet("winmgmts:").ExecQuery(Query)
@@ -281,10 +283,10 @@ ThisUpdaterRunning() {
 		Return False
 	}
 
-	Process, Exist, %UpdaterFile%	; Include elevated processes (no ExecutablePath filter)
-	If (ErrorLevel) {
-		IniRead, RunningAsAdmin, %IniFile%, Log, RunningAsAdmin, 0
-		Return RunningAsAdmin
+	IniRead, RunningAsAdmin, %IniFile%, Log, RunningAsAdmin, 0
+	If (RunningAsAdmin) {
+		Query := "Select ProcessId from Win32_Process where ProcessId!=" CurrentProcess	; Detect elevated processes when unelevated
+		Goto, Detect
 	}
 }
 
