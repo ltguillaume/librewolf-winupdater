@@ -55,7 +55,7 @@ Global _Updater       := Browser " WinUpdater"
 , _SetTask            := "Schedule a task for automatic update checks while`nuser {} is logged on."
 , _SettingTask        := (A_Args[1] = "/CreateTask" ? "Creating" : "Removing") " scheduled task..."
 , _Done               := " Done."
-, _GetPathError       := "Could not find the path to " Browser ".`nBrowse to " BrowserExe " in the following dialog."
+, _GetPathError       := "Could not find the browser path.`nBrowse to {} in the following dialog."
 , _SelectFileTitle    := _Updater " - Select " BrowserExe "..."
 , _WritePermError     := "Could not write to {}. Please check the current user account's write permissions for this folder."
 , _CopyError          := "Could not copy {}"
@@ -254,7 +254,7 @@ CheckPaths() {
 
 	CheckPath:
 	If (!FileExist(Path)) {
-		MsgBox, 48, %_Updater%, %_GetPathError%
+		MsgBox, 48, %_Updater%, % StrReplace(_GetPathError, "{}", BrowserExe)
 		FileSelectFile, Path, 3, %Path%, %_SelectFileTitle%, %BrowserExe%
 		If (ErrorLevel)
 			ExitApp
