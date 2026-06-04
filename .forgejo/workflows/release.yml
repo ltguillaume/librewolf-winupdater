@@ -86,7 +86,7 @@ jobs:
             sha256sum "$file" > "$file.sha256"
           done
 
-      - name: Create Release
+      - name: Create release
         uses: actions/forgejo-release@v2.11.3
         with:
           direction: upload

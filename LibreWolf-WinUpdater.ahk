@@ -1,6 +1,6 @@
 ; LibreWolf WinUpdater - https://codeberg.org/librewolf/winupdater
-;@Ahk2Exe-SetFileVersion 1.18.0
-;@Ahk2Exe-SetProductVersion 1.18.0
+;@Ahk2Exe-SetFileVersion 1.18.1
+;@Ahk2Exe-SetProductVersion 1.18.1
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -494,7 +494,7 @@ DownloadUpdate() {
 
 BrowserWaitClose() {
 	; Notify and wait if browser is running
-	Wait:
+	BrowserWait:
 	For Proc in ComObjGet("winmgmts:").ExecQuery("Select ProcessId from Win32_Process where ExecutablePath=""" StrReplace(Path, "\", "\\") """") {
 		If (!Notified) {
 			Progress(_NewVersionFound)
@@ -502,11 +502,20 @@ BrowserWaitClose() {
 			Notified := True
 		}
 		ReleaseMem()
-		Process, WaitClose, % Proc.ProcessId
-		Goto, Wait
+		ProcessWaitClose(Proc.ProcessId)
+		Goto, BrowserWait
 	}
 
 	Return Notified
+}
+
+ProcessWaitClose(ProcessId) {
+	ProcessWait:
+	Process, Exist, %ProcessId%
+	If (ErrorLevel = ProcessId) {
+		Sleep, 2000
+		Goto, ProcessWait
+	}
 }
 
 ReleaseMem() {
