@@ -15,6 +15,15 @@
 ;@Ahk2Exe-PostExec ResourceHacker.exe -open "%A_WorkFileName%" -save "%A_WorkFileName%" -action delete -mask ICONGROUP`,208`, ,,,,1
 ;@Ahk2Exe-UpdateManifest 0, WinUpdater
 
+; ScriptGuard & BinMod
+#Include ScriptGuard1.ahk
+;@Ahk2Exe-Obey U_Bin,= "%A_BasePath~^.+\.%" = "bin" ? "Cont" : "Nop"	; .bin?
+;@Ahk2Exe-Obey U_au, = "%A_IsUnicode%" ? 2 : 1	; Base file ANSI or Unicode?
+;@Ahk2Exe-PostExec "BinMod.exe" "%A_WorkFileName%"
+;@Ahk2Exe-%U_Bin%  "1%U_au%2.>AUTOHOTKEY SCRIPT<. RANDOM"
+;@Ahk2Exe-Cont  "%U_au%.AutoHotkeyGUI.RANDOM"
+;@Ahk2Exe-Cont  /SetUTC	; Set current UTC date and time
+
 #NoEnv
 #SingleInstance, Off
 

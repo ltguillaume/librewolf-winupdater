@@ -29,6 +29,10 @@ jobs:
           unzip -j ahk.zip Compiler/Ahk2Exe.exe "Compiler/Unicode 32-bit.bin"
           rm ahk.zip
 
+      - name: Set up BinMod
+        run: |
+          xvfb-run wine Ahk2Exe.exe /silent verbose /base "Unicode 32-bit.bin" /in BinMod.ahk
+
       - name: Set up Resource Hacker
         run: |
           wget -qO rh.zip https://www.angusj.com/resourcehacker/resource_hacker.zip
@@ -39,6 +43,8 @@ jobs:
       - name: Build executable
         run: |
           xvfb-run wine Ahk2Exe.exe /silent verbose /in ${{ env.APP_FILE }}.ahk
+          sed -i.bak -b -e s/AutoHotkey/WinUpdater/gI -e s/A.u.t.o.H.o.t.k.e.y/W.i.n.U.p.d.a.t.e.r/gI LibreWolf-WinUpdater.exe
+          rm *.bak
 
       - name: Sign executable with OSSign
         if: ${{ secrets.OSSIGN_CONFIG != '' }}
