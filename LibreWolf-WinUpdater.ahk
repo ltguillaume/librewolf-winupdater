@@ -501,7 +501,6 @@ BrowserWaitClose() {
 			Notify(_NewVersionFound)
 			Notified := True
 		}
-		ReleaseMem()
 		ProcessWaitClose(Proc.ProcessId)
 		Goto, BrowserWait
 	}
@@ -510,6 +509,7 @@ BrowserWaitClose() {
 }
 
 ProcessWaitClose(ProcessId) {
+	ReleaseMem()
 	ProcessWait:
 	Process, Exist, %ProcessId%
 	If (ErrorLevel = ProcessId) {
@@ -797,7 +797,7 @@ PreventShutdown() {
 }
 
 BlockShutdown(wParam, lParam) {
-	DllCall("ShutdownBlockReasonCreate", "ptr", GuiHwnd, "wstr", _IsUpdating)
+	DllCall("ShutdownBlockReasonCreate", "Ptr", GuiHwnd, "WStr", _IsUpdating)
 	ShutdownBlocked := True
 	OnExit("AllowShutdown")
 	GuiShow()
@@ -805,7 +805,7 @@ BlockShutdown(wParam, lParam) {
 }
 
 AllowShutdown() {
-	DllCall("ShutdownBlockReasonDestroy", "ptr", A_ScriptHwnd)
+	DllCall("ShutdownBlockReasonDestroy", "Ptr", A_ScriptHwnd)
 	OnExit(A_ThisFunc, 0)
 }
 
@@ -900,22 +900,22 @@ Hash(filePath, hashType = 4) {
 	If (!IsObject(f))
 		Return 0
 
-	If (!hModule := DllCall("GetModuleHandleW", "str", "Advapi32.dll", "Ptr"))
-		hModule := DllCall("LoadLibraryW", "str", "Advapi32.dll", "Ptr")
+	If (!hModule := DllCall("GetModuleHandleW", "Str", "Advapi32.dll", "Ptr"))
+		hModule := DllCall("LoadLibraryW", "Str", "Advapi32.dll", "Ptr")
 
 	If (!DllCall("Advapi32\CryptAcquireContextW"
 			,"Ptr*", hCryptProv
-			,"Uint", 0
-			,"Uint", 0
-			,"Uint", PROV_RSA_AES
+			,"UInt", 0
+			,"UInt", 0
+			,"UInt", PROV_RSA_AES
 			,"UInt", CRYPT_VERIFYCONTEXT))
 		Goto, FreeHandles
 
 	If (!DllCall("Advapi32\CryptCreateHash"
 			, "Ptr",  hCryptProv
-			, "Uint", HASH_ALG
-			, "Uint", 0
-			, "Uint", 0
+			, "UInt", HASH_ALG
+			, "UInt", 0
+			, "UInt", 0
 			, "Ptr*", hHash))
 		Goto, FreeHandles
 
@@ -929,25 +929,25 @@ Hash(filePath, hashType = 4) {
 		If (!DllCall(hCryptHashData
 				, "Ptr",  hHash
 				, "Ptr",  &read_buf
-				, "Uint", cbCount
-				, "Uint", 0))
+				, "UInt", cbCount
+				, "UInt", 0))
 			Goto, FreeHandles
 	}
 
 	If (!DllCall("Advapi32\CryptGetHashParam"
 			, "Ptr",   hHash
-			, "Uint",  HP_HASHSIZE
-			, "Uint*", HashLen
-			, "Uint*", HashLenSize := 4
+			, "UInt",  HP_HASHSIZE
+			, "UInt*", HashLen
+			, "UInt*", HashLenSize := 4
 			, "UInt",  0))
 		Goto, FreeHandles
 
 	VarSetCapacity(pbHash, HashLen, 0)
 	If (!DllCall("Advapi32\CryptGetHashParam"
 			, "Ptr",   hHash
-			, "Uint",  HP_HASHVAL
+			, "UInt",  HP_HASHVAL
 			, "Ptr",   &pbHash
-			, "Uint*", HashLen
+			, "UInt*", HashLen
 			, "UInt",  0))
 		Goto, FreeHandles
 
@@ -1040,7 +1040,7 @@ RunElevated() {
 }
 
 Unelevate(Forced = False) {
-	If (!A_IsAdmin Or IsPortable Or (Scheduled And !Forced) Or RegExMatch(DllCall("GetCommandLine", "str"), " /Restart(?!\S)"))
+	If (!A_IsAdmin Or IsPortable Or (Scheduled And !Forced) Or RegExMatch(DllCall("GetCommandLine", "Str"), " /Restart(?!\S)"))
 		Return
 
 	If (RunUnelevated(A_ScriptFullPath, "/Restart " Args, A_ScriptDir))
@@ -1059,12 +1059,12 @@ RunUnelevated(Prms*) {
 				, "{4C96BE40-915C-11CF-99D3-00AA004AE837}"	; SID_STopLevelBrowser
 				, "{000214E2-0000-0000-C000-000000000046}")	; IID_IShellBrowser
 		{
-				If DllCall(NumGet(NumGet(Ptlb + 0) + 15 * A_PtrSize), "ptr", Ptlb, "ptr*", Psv := 0) = 0
+				If DllCall(NumGet(NumGet(Ptlb + 0) + 15 * A_PtrSize), "Ptr", Ptlb, "Ptr*", Psv := 0) = 0
 				{
 						VarSetCapacity(IID_IDispatch, 16)
-						NumPut(0x46000000000000C0, NumPut(0x20400, IID_IDispatch, "int64"), "int64")
-						DllCall(NumGet(NumGet(psv+0)+15*A_PtrSize), "ptr", Psv
-							, "uint", 0, "ptr", &IID_IDispatch, "ptr*", Pdisp := 0)
+						NumPut(0x46000000000000C0, NumPut(0x20400, IID_IDispatch, "Int64"), "Int64")
+						DllCall(NumGet(NumGet(psv+0)+15*A_PtrSize), "Ptr", Psv
+							, "UInt", 0, "Ptr", &IID_IDispatch, "Ptr*", Pdisp := 0)
 						Shell := ComObj(9, Pdisp, 1).Application
 						Shell.ShellExecute(Prms*)
 						ObjRelease(Psv)
