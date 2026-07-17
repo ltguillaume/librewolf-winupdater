@@ -23,17 +23,23 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Set up Ahk2Exe
+        env:
+          DL_AUTOHOTKEY: ${{ vars.DL_AUTOHOTKEY }}
+          SHA_AUTOHOTKEY: ${{ vars.SHA_AUTOHOTKEY }}
         run: |
-          wget -qO ahk.zip https://github.com/AutoHotkey/AutoHotkey/releases/download/v1.1.37.02/AutoHotkey_1.1.37.02.zip
-          echo "6f3663f7cdd25063c8c8728f5d9b07813ced8780522fd1f124ba539e2854215f ahk.zip" | sha256sum -c || exit 1
+          wget -qO ahk.zip ${{ env.DL_AUTOHOTKEY }}
+          echo "${{ env.SHA_AUTOHOTKEY }} ahk.zip" | sha256sum -c || exit 1
           unzip -j ahk.zip Compiler/Ahk2Exe.exe "Compiler/Unicode 32-bit.bin"
           rm ahk.zip
 
       - name: Set up Resource Hacker
+        env:
+          DL_RESHACKER: ${{ vars.DL_RESHACKER }}
+          SHA_RESHACKER: ${{ vars.SHA_RESHACKER }}
         run: |
-          wget -qO rh.zip https://www.angusj.com/resourcehacker/resource_hacker.zip
+          wget -qO rh.zip ${{ env.DL_RESHACKER }}
+          echo "${{ env.SHA_RESHACKER }} rh.zip" | sha256sum -c || exit 1
           unzip rh.zip ResourceHacker.exe
-          echo "14a44fe31b04fbcc65e94e80016138a2e9fc9bb6dfcea09b98de57f8a22a1240 ResourceHacker.exe" | sha256sum -c || exit 1
           rm rh.zip
 
       - name: Build executable
@@ -106,7 +112,7 @@ jobs:
             
             > [!TIP]
             > The authenticity of the release `.zip` can be verified with GPG.
-            > Import our key: `gpg --import [librewolf].asc` (available via [gpg.librewolf.net](https://gpg.librewolf.net), [keys.openpgp.org](https://keys.openpgp.org/search?q=gpg%40librewolf.net), [keyserver.ubuntu.com](https://keyserver.ubuntu.com/pks/lookup?search=gpg%40librewolf.net&op=index)), then verify: `gpg --verify ${{ env.APP_FILE }}.zip.asc`.
+            > Import our key: `gpg --import [librewolf].asc` (available at [gpg.librewolf.net](https://gpg.librewolf.net), [keys.openpgp.org](https://keys.openpgp.org/search?q=gpg%40librewolf.net), [keyserver.ubuntu.com](https://keyserver.ubuntu.com/pks/lookup?search=gpg%40librewolf.net&op=index)), then verify: `gpg --verify ${{ env.APP_FILE }}*.asc`.
             
             > [!CAUTION]
             > [Link to VirusTotal Report](${{ env.VT_URL }})
