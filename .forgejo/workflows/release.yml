@@ -14,8 +14,8 @@ jobs:
     steps:
       - name: Set up dependencies
         run: |
-          wget https://pkg.ossign.org/debian/repository.key -O /etc/apt/keyrings/ossign.asc -q
-          echo "deb [signed-by=/etc/apt/keyrings/ossign.asc] https://pkg.ossign.org/debian all main" | tee /etc/apt/sources.list.d/ossign.list
+          wget https://vcs.fi/api/packages/OSSign/debian/repository.key -O /etc/apt/keyrings/ossign.asc -q
+          echo "deb [signed-by=/etc/apt/keyrings/ossign.asc] https://vcs.fi/api/packages/OSSign/debian stable main" | tee /etc/apt/sources.list.d/ossign.list
           sudo apt-get update
           sudo apt-get install -y nodejs zip ossign
 
