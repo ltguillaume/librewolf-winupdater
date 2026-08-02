@@ -8,7 +8,7 @@ env:
 
 jobs:
   release:
-    runs-on: codeberg-small
+    runs-on: epsilon
     container:
       image: scottyhardy/docker-wine:stable
     steps:
