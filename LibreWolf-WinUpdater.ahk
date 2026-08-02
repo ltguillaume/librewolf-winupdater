@@ -1,6 +1,6 @@
 ; LibreWolf WinUpdater - https://codeberg.org/librewolf/winupdater
-;@Ahk2Exe-SetFileVersion 1.18.1
-;@Ahk2Exe-SetProductVersion 1.18.1
+;@Ahk2Exe-SetFileVersion 1.18.2
+;@Ahk2Exe-SetProductVersion 1.18.2
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -576,8 +576,8 @@ RunUpdate() {
 			Install()
 		Else {
 			Progress(_Downloaded)
-			Gui, Add, Button, vUpdateButton gInstall w148 x86 y110 Default, %_StartUpdate%
 			GuiControl, Move, TaskSetField, y146
+			Gui, Add, Button, vUpdateButton gInstall w148 x86 y110 Default, %_StartUpdate%
 			GuiShow(True)	; Wait for user action
 		}
 	}
