@@ -1,6 +1,6 @@
 ; LibreWolf WinUpdater - https://codeberg.org/librewolf/winupdater
-;@Ahk2Exe-SetFileVersion 1.18.2
-;@Ahk2Exe-SetProductVersion 1.18.2
+;@Ahk2Exe-SetFileVersion 1.19.0
+;@Ahk2Exe-SetProductVersion 1.19.0
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -41,6 +41,7 @@ Global Args       := ""
 
 ; Strings
 Global _Updater       := Browser " WinUpdater"
+, _Title              := _Updater " {}"
 , _Show               := "Show"
 , _PortableHelp       := "Portable Help"
 , _UpdaterHelp        := "WinUpdater Help"
@@ -54,9 +55,11 @@ Global _Updater       := Browser " WinUpdater"
 , _Checking           := "Checking for new version..."
 , _SetTask            := "Schedule a task for automatic update checks while`nuser {} is logged on."
 , _SettingTask        := (A_Args[1] = "/CreateTask" ? "Creating" : "Removing") " scheduled task..."
+, _NoTaskScript       := "The script file {} does not exist."
 , _Done               := " Done."
+, _Failed             := " Failed."
 , _GetPathError       := "Could not find the browser path.`nBrowse to {} in the following dialog."
-, _SelectFileTitle    := _Updater " - Select " BrowserExe "..."
+, _SelectFileTitle    := _Title " - Select " BrowserExe "..."
 , _WritePermError     := "Could not write to {}. Please check the current user account's write permissions for this folder."
 , _CopyError          := "Could not copy {}"
 , _32BitLW            := "LibreWolf does not provide a 32-bit build anymore."
@@ -117,6 +120,7 @@ Exit()
 Init() {
 	FileGetVersion, CurrentUpdaterVersion, %A_ScriptFullPath%
 	CurrentUpdaterVersion := RegExReplace(CurrentUpdaterVersion, "(\.0)+$")
+	_Title := StrReplace(_Title, "{}", CurrentUpdaterVersion)
 	EnvGet, ProgramW6432, ProgramW6432
 	If (ProgramW6432 = "")
 		ProgramW6432 := "?"
@@ -129,7 +133,7 @@ Init() {
 	IniWrite, %IgnoreCrlErrors%, %IniFile%, Settings, IgnoreCrlErrors
 	IniWrite, %NoSigChecks%, %IniFile%, Settings, NoSigChecks
 	IniWrite, %UpdateSelf%, %IniFile%, Settings, UpdateSelf
-	Menu, Tray, Tip, %_Updater% %CurrentUpdaterVersion%
+	Menu, Tray, Tip, %_Title%
 	Menu, Tray, NoStandard
 	Menu, Tray, Add, %_Show%, Action
 	Menu, Tray, Add, %_PortableHelp%, Action
@@ -150,7 +154,7 @@ Init() {
 	Gui, Add, Progress, vProgField w217 h20 c00ACFF, 10
 	Gui, Add, Text, vLogField w222
 	Gui, Margin,, 15
-	Gui, Show, Hide, %_Updater% %CurrentUpdaterVersion%
+	Gui, Show, Hide, %_Title%
 
 	If (A_IsCompiled)
 		CheckSignature(A_ScriptFullPath)
@@ -203,7 +207,7 @@ Action(ItemName, GuiEvent, LinkIndex) {
 				RegRead, DefBrowser, HKCR, %DefBrowser%\Shell\Open\Command
 				Run, % StrReplace(DefBrowser, "%1", Url)
 				If (ErrorLevel)
-					MsgBox, 48, %_Updater%, %_NoDefaultBrowser%
+					MsgBox, 48, %_Title%, %_NoDefaultBrowser%
 			}
 	}
 }
@@ -240,7 +244,7 @@ CheckPaths() {
 
 ;MsgBox, Path = %Path%`nSetupParams = %SetupParams%
 	Folder := StrReplace(Path, "\" BrowserExe)
-	Menu, Tray, Tip, %_Updater% %CurrentUpdaterVersion%`n%Folder%
+	Menu, Tray, Tip, %_Title%`n%Folder%
 
 	If (SubStr(WorkDir, 1, 1) = ".")
 		WorkDir := A_ScriptDir . SubStr(WorkDir, 2)
@@ -254,7 +258,7 @@ CheckPaths() {
 
 	CheckPath:
 	If (!FileExist(Path)) {
-		MsgBox, 48, %_Updater%, % StrReplace(_GetPathError, "{}", BrowserExe)
+		MsgBox, 48, %_Title%, % StrReplace(_GetPathError, "{}", BrowserExe)
 		FileSelectFile, Path, 3, %Path%, %_SelectFileTitle%, %BrowserExe%
 		If (ErrorLevel)
 			ExitApp
@@ -427,7 +431,7 @@ SwitchTo64() {
 	If (!A_Is64bitOS)
 		Die(_32BitLW " " _32BitOS)
 
-	MsgBox, 52, %_Updater%, %_32BitLW% %_SwitchTo64%
+	MsgBox, 52, %_Title%, %_32BitLW% %_SwitchTo64%
 	IfMsgBox, No
 		Die(_32BitLW)
 
@@ -556,7 +560,7 @@ CheckSignature(File) {
 ;MsgBox, Signature for:`n%File%`nWrong signature = %ErrorLevel%
 	If (ErrorLevel) {
 		If (Focus()) {
-			MsgBox, 276, %_Updater%, % StrReplace(_SignatureError, "{}", File)
+			MsgBox, 276, %_Title%, % StrReplace(_SignatureError, "{}", File)
 			IfMsgBox, Yes
 				Return
 		}
@@ -651,7 +655,7 @@ Install() {
 	If (!ErrorLevel)
 		WriteReport()
 	Else {
-		MsgBox, 52, %_Updater%, %_SilentUpdateError%
+		MsgBox, 52, %_Title%, %_SilentUpdateError%
 		IfMsgBox, No
 			Progress(StrReplace(_UpdateError, "{}"), True)
 		Else {
@@ -779,7 +783,7 @@ CrlCheck() {
 	If (WinExist("ahk_exe " UpdaterFile " ahk_class #32770",, Browser)) {
 		If (!IgnoreCrlErrors) {
 			Msg := StrReplace(_CrlError, "{}", CurrentDomain)
-			MsgBox, 52, %_Updater%, %Msg%
+			MsgBox, 52, %_Title%, %Msg%
 			IfMsgBox, No
 			{
 				ControlClick, Button2	; Abort
@@ -982,7 +986,7 @@ Log(Key, Msg = "", PrefixTime = False) {
 Notify(Msg, Ver = 0, Delay = 0) {
 	If (!Ver)
 		Ver := NewVersion
-	Menu, Tray, Tip, %_Updater% %CurrentUpdaterVersion%`n%Folder%`n`n%Msg%
+	Menu, Tray, Tip, %_Title%`n%Folder%`n`n%Msg%
 	If (Scheduled Or Delay) {
 		TrayTip, %Msg%, v%Ver%,, 16
 		Sleep, %Delay%
@@ -996,7 +1000,7 @@ Progress(Msg, End = False) {
 	Else If (Msg <> _NewVersionFound)
 		GuiControl,, ProgField, +15
 
-	Menu, Tray, Tip, %_Updater% %CurrentUpdaterVersion%`n%Folder%`n`n%Msg%
+	Menu, Tray, Tip, %_Title%`n%Folder%`n`n%Msg%
 	Done := End
 }
 
@@ -1004,30 +1008,37 @@ TaskCheck() {
 	RunWait schtasks.exe /query /tn "%_Updater% (%A_UserName%)",, Hide
 	GuiControl,, TaskSetField, % ErrorLevel = 0
 	Gui, Submit, NoHide
+	Return Result
 }
 
 TaskSet() {
 	If (SettingTask) {
 		Progress(_SettingTask)
-		If (A_Args[1] = "/CreateTask")
-			TaskSetField := 0
-		Else If (A_Args[1] = "/RemoveTask")
-			TaskSetField := 1
-		Sleep, 1000
-	}
+		Goal := A_Args[1] = "/CreateTask" ? 1 : 0
+		If (Goal = 0 And TaskSetField = 0)
+			Return Exit()
+		Sleep, 1500
+	} Else
+		Goal := !TaskSetField
 
-	Script := A_ScriptDir "\" (TaskSetField = 0 ? TaskCreateFile : TaskRemoveFile)
+	Script := A_ScriptDir "\" (Goal = 1 ? TaskCreateFile : TaskRemoveFile)
+	If (!FileExist(Script))
+		Die(_NoTaskScript, Script)
 	GuiControl,, TaskSetField, -1
 	RunWait, powershell.exe -NoProfile -ExecutionPolicy RemoteSigned -File "%Script%"
 	WinWaitActive, ahk_id %GuiHwnd%
-	Sleep, 1000
+	Sleep, 500
 	WinWaitActive
 	TaskCheck()
 
 	If (SettingTask) {
 		SettingTask := 0
-		Progress(_SettingTask _Done, True)
-		GuiShow(True)	; Don't start updating, just wait for close
+		Result := TaskSetField = Goal ? _Done : _Failed
+		Progress(_SettingTask Result, True)
+		If (Result = _Done)
+			Exit()
+		Else
+			GuiShow(True)	; Don't start updating, just wait for close
 	}
 }
 
