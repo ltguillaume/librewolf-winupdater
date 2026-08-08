@@ -1,4 +1,4 @@
-; LibreWolf WinUpdater - https://codeberg.org/librewolf/winupdater
+; LibreWolf WinUpdater - https://librewolf.dev/librewolf/winupdater
 ;@Ahk2Exe-SetFileVersion 1.19.0
 ;@Ahk2Exe-SetProductVersion 1.19.0
 
@@ -200,7 +200,7 @@ Action(ItemName, GuiEvent, LinkIndex) {
 			If (LinkIndex = 2)
 				ItemName := "WinUpdater"
 
-			Url := "https://codeberg.org/librewolf/" StrReplace(ItemName, " Help") "#readme"
+			Url := "https://librewolf.dev/librewolf/" StrReplace(ItemName, " Help") "#readme"
 			Try Run, %Url%
 			Catch {
 				RegRead, DefBrowser, HKCR, .html

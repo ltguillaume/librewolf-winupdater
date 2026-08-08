@@ -11,7 +11,7 @@ An attempt to make updating LibreWolf for Windows much easier.
 ## Getting started
 ### LibreWolf Setup
 - When installing LibreWolf, the [official installer](https://librewolf.net/installation/windows/) will show an option to install LibreWolf WinUpdater. On first run, it will copy itself to `%AppData%\LibreWolf\WinUpdater` to be able to update itself without administrator privileges.
-- Alternatively, you can download and extract the latest [`LibreWolf-WinUpdater_x.x.x.zip`](https://codeberg.org/librewolf/winupdater/releases), then run `LibreWolf-WinUpdater.exe` to check for an update. If one is available, it will be downloaded immediately.
+- Alternatively, you can download and extract the latest [`LibreWolf-WinUpdater_x.x.x.zip`](https://librewolf.dev/librewolf/winupdater/releases), then run `LibreWolf-WinUpdater.exe` to check for an update. If one is available, it will be downloaded immediately.
 ### LibreWolf Portable
 - If you want to run the portable version of LibreWolf, download and extract [`librewolf-xxx.x.x-windows-x86_64-portable.zip`](https://librewolf.net/installation/windows/) (second blue button). It already contains WinUpdater.
 - LibreWolf will be updated automatically whenever you run `LibreWolf-Portable.exe` (checks for new versions happen once a day). If you only wish to perform update checks manually, just rename WinUpdater to e.g. `LibreWolf-ManualUpdater.exe` and run it whenever you like.
@@ -57,8 +57,8 @@ You may encounter a `Security Alert: Revocation information for the Security cer
 IgnoreCrlErrors=1
 ```
 ### Asking for help
-If you experience another issue, you can search the problems (and solutions) reported in the [WinUpdater Issues](https://codeberg.org/librewolf/winupdater/issues) and the [LibreWolf Issues](https://codeberg.org/librewolf/issues/issues), or create an issue yourself.
+If you experience another issue, you can search the problems (and solutions) reported in the [WinUpdater Issues](https://librewolf.dev/librewolf/winupdater/issues) and the [LibreWolf Issues](https://codeberg.org/librewolf/issues/issues), or create an issue yourself.
 
 ## Credits
 * [LibreWolf](https://librewolf.net) by the [LibreWolf Community](https://librewolf.net/#core-contributors)
-* [Original icon](https://codeberg.org/librewolf/branding) by the [LibreWolf Community](https://librewolf.net/#core-contributors)
+* [Original icon](https://librewolf.dev/librewolf/branding) by the [LibreWolf Community](https://librewolf.net/#core-contributors)
