@@ -22,9 +22,9 @@ Global Args       := ""
 , Browser         := "LibreWolf"
 , BrowserExe      := "librewolf.exe"
 , BrowserPortable := "LibreWolf\" BrowserExe
-, ConnectCheckUrl := "https://codeberg.org/api/v1/version"
-, ReleaseApiUrl   := "https://codeberg.org/api/v1/repos/librewolf/bsys6/releases/latest"
-, UpdaterApiUrl   := "https://codeberg.org/api/v1/repos/librewolf/winupdater/releases/latest"
+, ConnectCheckUrl := "https://librewolf.dev/api/v1/version"
+, ReleaseApiUrl   := "https://librewolf.dev/api/v1/repos/librewolf/bsys6/releases/latest"
+, UpdaterApiUrl   := "https://librewolf.dev/api/v1/repos/librewolf/winupdater/releases/latest"
 , SetupParams     := "/D={}"
 , TaskCreateFile  := "ScheduledTask-Create.ps1"
 , TaskRemoveFile  := "ScheduledTask-Remove.ps1"
@@ -845,7 +845,7 @@ GetLatestVersion() {
 	RegExMatch(ReleaseInfo, "i)tag_name"":\s*""v?(.+?)""", Release)
 	LatestVersion := Release1
 	If (!LatestVersion) {
-		If (Task = _Updater And InStr(ReleaseInfo, "{") <> 1)	; Codeberg non-JSON error page
+		If (Task = _Updater And InStr(ReleaseInfo, "{") <> 1)	; If payload is not JSON (e.g. error page)
 			Return CurrentUpdaterVersion
 		Else
 			Die(_JsonVersionError)
