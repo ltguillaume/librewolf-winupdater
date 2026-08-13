@@ -47,11 +47,11 @@ Global _Updater       := Browser " WinUpdater"
 , _UpdaterHelp        := "WinUpdater Help"
 , _Settings           := "Settings"
 , _Exit               := "Exit"
-, _NoConnectionError  := "Could not connect to " SubStr(ConnectCheckUrl, 1, InStr(ConnectCheckUrl, "/",,, 3) - 1) "."
 , _IsRunningError     := _Updater " is already running."
 , _IsElevated         := "To set up scheduled tasks properly, please do not run WinUpdater as administrator."
 , _NoDefaultBrowser   := "Could not open your default browser."
 , _SelfUpdating       := "Downloading new WinUpdater version..."
+, _NoConnectionError  := "Could not connect to " SubStr(ConnectCheckUrl, 1, InStr(ConnectCheckUrl, "/",,, 3) - 1) "."
 , _Checking           := "Checking for new version..."
 , _SetTask            := "Schedule a task for automatic update checks while`nuser {} is logged on."
 , _SettingTask        := (A_Args[1] = "/CreateTask" ? "Creating" : "Removing") " scheduled task..."
@@ -109,7 +109,6 @@ If (SettingTask Or !A_Args.Length())	; No arguments: when not running as portabl
 	GuiShow()
 If (SettingTask)
 	TaskSet()
-CheckConnection()
 If (UpdateSelf And A_IsCompiled)
 	SelfUpdate()
 SwitchTo64()
@@ -369,17 +368,6 @@ GetCurrentBuild() {
 		Die(_GetBuildError)
 	} Catch e
 		Die(_GetBuildError ": " e.Message)
-}
-
-CheckConnection() {
-	Connected := Download(ConnectCheckUrl)
-;MsgBox, %Connected%
-	If (!Connected Or !InStr(Connected, """version"":")) {
-		RegExMatch(Connected, "i)<title>(.+?)</title>", Title)
-		Title := Title1 ? "`n" Title1 "." : ""
-;MsgBox, %Title%
-		Die(_NoConnectionError Title,, !Scheduled)	; Show only if not scheduled
-	}
 }
 
 SelfUpdate() {
@@ -835,23 +823,35 @@ Extract(From, To) {
 GetLatestVersion() {
 	ReleaseUrl := (Task = _Updater ? UpdaterApiUrl : ReleaseApiUrl)
 	ReleaseInfo := Download(ReleaseUrl)
-	If (!ReleaseInfo) {
+	If (!ReleaseInfo Or InStr(ReleaseInfo, "{") <> 1) {	; If payload is not JSON (e.g. error page)) {
 		If (Task = _Updater)
 			Return CurrentUpdaterVersion
-		Else
+		Else If (CheckConnection())
 			Die(_DownloadJsonError)
 	}
 
 	RegExMatch(ReleaseInfo, "i)tag_name"":\s*""v?(.+?)""", Release)
 	LatestVersion := Release1
 	If (!LatestVersion) {
-		If (Task = _Updater And InStr(ReleaseInfo, "{") <> 1)	; If payload is not JSON (e.g. error page)
+		If (Task = _Updater)
 			Return CurrentUpdaterVersion
 		Else
 			Die(_JsonVersionError)
 	}
 
 	Return LatestVersion
+}
+
+CheckConnection() {
+	Connected := Download(ConnectCheckUrl)
+;MsgBox, %Connected%
+	If (!Connected Or !InStr(Connected, """version"":")) {
+		RegExMatch(Connected, "i)<title>(.+?)</title>", Title)
+		Title := Title1 ? "`n" Title1 "." : ""
+;MsgBox, %Title%
+		Die(_NoConnectionError Title,, !Scheduled)	; Show only if not scheduled
+	}
+	Return True
 }
 
 GuiClose() {
