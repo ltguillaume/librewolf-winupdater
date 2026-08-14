@@ -20,7 +20,7 @@ jobs:
           sudo apt-get install -y nodejs zip ossign
 
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Ahk2Exe
         env:
@@ -79,7 +79,7 @@ jobs:
           zip ./dist/${{ env.APP_FILE }}_${APP_VERSION}.zip ${{ env.APP_FILE }}.exe ${{ env.APP_FILE }}.url *.ps1
 
       - name: Upload artifacts
-        uses: https://data.forgejo.org/forgejo/upload-artifact@v4
+        uses: forgejo/upload-artifact@v4
         with:
           path: |
             dist/${{ env.APP_FILE }}*.zip
@@ -93,7 +93,7 @@ jobs:
           done
 
       - name: Create release
-        uses: actions/forgejo-release@v2.11.3
+        uses: actions/forgejo-release@v2.13.4
         with:
           direction: upload
           gpg-private-key: ${{ secrets.WINDOWS_PRIVATE_KEY }}
