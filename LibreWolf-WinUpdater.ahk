@@ -1,6 +1,6 @@
 ; LibreWolf WinUpdater - https://librewolf.dev/librewolf/winupdater
-;@Ahk2Exe-SetFileVersion 1.19.0
-;@Ahk2Exe-SetProductVersion 1.19.0
+;@Ahk2Exe-SetFileVersion 1.19.1
+;@Ahk2Exe-SetProductVersion 1.19.1
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -22,9 +22,9 @@ Global Args       := ""
 , Browser         := "LibreWolf"
 , BrowserExe      := "librewolf.exe"
 , BrowserPortable := "LibreWolf\" BrowserExe
-, ConnectCheckUrl := "https://librewolf.dev/api/v1/version"
-, ReleaseApiUrl   := "https://librewolf.dev/api/v1/repos/librewolf/bsys6/releases/latest"
-, UpdaterApiUrl   := "https://librewolf.dev/api/v1/repos/librewolf/winupdater/releases/latest"
+, ConnectCheckUrl := "https://codeberg.org/api/v1/version"
+, ReleaseApiUrl   := "https://codeberg.org/api/v1/repos/librewolf/bsys6/releases/latest"
+, UpdaterApiUrl   := "https://codeberg.org/api/v1/repos/librewolf/winupdater/releases/latest"
 , SetupParams     := "/D={}"
 , TaskCreateFile  := "ScheduledTask-Create.ps1"
 , TaskRemoveFile  := "ScheduledTask-Remove.ps1"
