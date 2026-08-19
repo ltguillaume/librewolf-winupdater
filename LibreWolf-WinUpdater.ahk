@@ -1,6 +1,6 @@
 ; LibreWolf WinUpdater - https://librewolf.dev/librewolf/winupdater
-;@Ahk2Exe-SetFileVersion 1.19.1
-;@Ahk2Exe-SetProductVersion 1.19.1
+;@Ahk2Exe-SetFileVersion 1.19.2
+;@Ahk2Exe-SetProductVersion 1.19.2
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -97,6 +97,7 @@ Global _Updater       := Browser " WinUpdater"
 , _To                 := "to"
 , _GoToWebsite        := "<a>Restart WinUpdater</a> or visit the <a>project website</a> for help."
 
+CheckSettings()
 Init()
 CheckArgs()
 CheckPaths()
@@ -116,13 +117,7 @@ If (GetNewVersion())
 	GetUpdate()
 Exit()
 
-Init() {
-	FileGetVersion, CurrentUpdaterVersion, %A_ScriptFullPath%
-	CurrentUpdaterVersion := RegExReplace(CurrentUpdaterVersion, "(\.0)+$")
-	_Title := StrReplace(_Title, "{}", CurrentUpdaterVersion)
-	EnvGet, ProgramW6432, ProgramW6432
-	If (ProgramW6432 = "")
-		ProgramW6432 := "?"
+CheckSettings() {
 	SplitPath, A_ScriptFullPath,,,, BaseName
 	IniFile := A_ScriptDir "\" BaseName ".ini"
 	IniRead, IgnoreCrlErrors, %IniFile%, Settings, IgnoreCrlErrors, 0
@@ -132,6 +127,15 @@ Init() {
 	IniWrite, %IgnoreCrlErrors%, %IniFile%, Settings, IgnoreCrlErrors
 	IniWrite, %NoSigChecks%, %IniFile%, Settings, NoSigChecks
 	IniWrite, %UpdateSelf%, %IniFile%, Settings, UpdateSelf
+}
+
+Init() {
+	FileGetVersion, CurrentUpdaterVersion, %A_ScriptFullPath%
+	CurrentUpdaterVersion := RegExReplace(CurrentUpdaterVersion, "(\.0)+$")
+	_Title := StrReplace(_Title, "{}", CurrentUpdaterVersion)
+	EnvGet, ProgramW6432, ProgramW6432
+	If (ProgramW6432 = "")
+		ProgramW6432 := "?"
 	Menu, Tray, Tip, %_Title%
 	Menu, Tray, NoStandard
 	Menu, Tray, Add, %_Show%, Action
@@ -386,9 +390,12 @@ SelfUpdate() {
 ;MsgBox, %DownloadInfo1%`n%DownloadInfo2%
 	SelfUpdateZip := DownloadInfo1
 	DownloadUrl := DownloadInfo2
-	UrlDownloadToFile, %DownloadUrl%, %SelfUpdateZip%
+	Try UrlDownloadToFile, %DownloadUrl%, %SelfUpdateZip%
+	Catch e {
+		ErrorLevel := e.What " (" e.Line "): " e.Message (e.Extra ? " [" e.Extra "]" : "") "."
+	}
 	If (ErrorLevel Or !FileExist(SelfUpdateZip))
-		Return Log("SelfUpdate", _DownloadSelfError, True)
+		Return Log("SelfUpdate", _DownloadSelfError " " ErrorLevel, True)
 ;MsgBox, Extracting %SelfUpdateZip%
 	Verify(SelfUpdateZip)
 
@@ -479,9 +486,12 @@ DownloadUpdate() {
 
 	; Download setup file
 	Progress(_Downloading)
-	UrlDownloadToFile, %DownloadUrl%, %SetupFile%
+	Try UrlDownloadToFile, %DownloadUrl%, %SetupFile%
+	Catch e {
+		ErrorLevel := e.What " (" e.Line "): " e.Message (e.Extra ? " [" e.Extra "]" : "") "."
+	}
 	If (ErrorLevel Or !FileExist(SetupFile))
-		Die(_DownloadSetupError)
+		Die(_DownloadSetupError " " ErrorLevel)
 }
 
 BrowserWaitClose() {
@@ -855,9 +865,7 @@ CheckConnection() {
 }
 
 GuiClose() {
-	try {
-		Gui, Destroy
-	} catch {}
+	Try Gui, Destroy
 	Exit()
 }
 
@@ -1044,9 +1052,7 @@ TaskSet() {
 
 RunElevated() {
 ;MsgBox, Running elevated (args = "%Args%")
-	Try {
-		Run *RunAs "%A_ScriptFullPath%" %Args% /Restart
-	}
+	Try Run *RunAs "%A_ScriptFullPath%" %Args% /Restart
 	ExitApp
 }
 
