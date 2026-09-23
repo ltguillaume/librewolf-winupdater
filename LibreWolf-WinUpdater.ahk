@@ -1,6 +1,6 @@
 ; LibreWolf WinUpdater - https://librewolf.dev/librewolf/winupdater
-;@Ahk2Exe-SetFileVersion 1.19.2
-;@Ahk2Exe-SetProductVersion 1.19.2
+;@Ahk2Exe-SetFileVersion 1.19.3
+;@Ahk2Exe-SetProductVersion 1.19.3
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -433,8 +433,9 @@ SwitchTo64() {
 	Build := "x86_64"
 }
 
-GetNewVersion() {
-	Progress(_Checking)
+GetNewVersion(Waited = False) {
+	If (!Waited)
+		Progress(_Checking)
 	Task := Browser
 	NewVersion := GetLatestVersion()
 ;MsgBox, ReleaseInfo = %ReleaseInfo%`nCurrentVersion = %CurrentVersion%`nNewVersion = %NewVersion%
@@ -458,7 +459,7 @@ GetUpdate() {
 	Waited := BrowserWaitClose()
 
 	If (Waited) {
-		If (VerCompare(GetNewVersion(), ">" NewVersion)) {	; Check for newer version since download
+		If (VerCompare(GetNewVersion(True), ">" NewVersion)) {	; Check for newer version since download
 			FileDelete, %SetupFile%
 			Goto, Download
 		} Else
@@ -595,26 +596,26 @@ ExtractPortable() {
 
 	Loop, Files, %ExtractDir%\*, D
 	{
-		LibreWolfExtracted := A_LoopFilePath	;	Get the first folder of the extracted archive
+		SetupExtracted := A_LoopFilePath	;	Get the first folder of the extracted archive
 		Break
 	}
 
-	; Remove files not present in the new version's browser folder
+	SetWorkingDir, %SetupExtracted%
+	CheckSignature(A_WorkingDir "\" PortableExe)
+	CheckSignature(A_WorkingDir "\" BrowserPortable)
+
+	; Move files not present in the new version to a backup folder
 	SetWorkingDir, %A_ScriptDir%\%Browser%
 	Loop, Files, *, R
 	{
-		If (!FileExist(LibreWolfExtracted "\" Browser "\" A_LoopFilePath) And A_LoopFileName <> BrowserExe ".wubak") {
+		If (!FileExist(SetupExtracted "\" Browser "\" A_LoopFilePath) And A_LoopFileName <> BrowserExe ".wubak") {
 			FileCreateDir, %Folder%.wubak\%A_LoopFileDir%
 			FileMove, %A_LoopFilePath%, %Folder%.wubak\%A_LoopFilePath%, 1
 		}
 	}
 
 ;MsgBox, Traversing %A_LoopFilePath%
-	SetWorkingDir, %LibreWolfExtracted%
-
-	CheckSignature(A_WorkingDir "\" PortableExe)
-	CheckSignature(A_WorkingDir "\" BrowserPortable)
-
+	SetWorkingDir, %SetupExtracted%
 	Loop, Files, *, R
 	{
 		If (A_LoopFileName = BrowserExe Or A_LoopFileName = UpdaterFile)
