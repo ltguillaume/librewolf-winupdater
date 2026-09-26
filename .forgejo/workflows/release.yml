@@ -17,7 +17,7 @@ jobs:
           wget https://vcs.fi/api/packages/OSSign/debian/repository.key -O /etc/apt/keyrings/ossign.asc -q
           echo "deb [signed-by=/etc/apt/keyrings/ossign.asc] https://vcs.fi/api/packages/OSSign/debian stable main" | tee /etc/apt/sources.list.d/ossign.list
           sudo apt-get update
-          sudo apt-get install -y nodejs zip ossign
+          sudo apt-get install -y nodejs zip ossign s3cmd
 
       - name: Check out repository
         uses: actions/checkout@v7
@@ -118,3 +118,35 @@ jobs:
             > [Link to VirusTotal Report](${{ env.VT_URL }})
             > Some antivirus software might mark this as malware. [This is a false positive](https://www.autohotkey.com/docs/v1/FAQ.htm#Virus). Please report the program as safe if possible.
             > <details><summary>Known problematic vendors</summary><em>Arctic Wolf, DeepInstinct, Gridinsoft, NANO-Antivirus, SecureAge, Skyhigh (SWG), Trapmine, Trellix, VirIT, Zillya.</em></details>
+
+      - name: Upload to S3
+        env:
+          S3_ENDPOINT: ${{ vars.S3_ENDPOINT }}
+          S3_BUCKET: ${{ vars.S3_BUCKET }}
+          S3_KEY: ${{ secrets.S3_KEY }}
+          S3_SECRET: ${{ secrets.S3_SECRET }}
+          S3_PUBLIC_URL: ${{ vars.S3_PUBLIC_URL }}
+        run: |
+          for required_var in S3_ENDPOINT S3_BUCKET S3_KEY S3_SECRET S3_PUBLIC_URL; do
+            if [ -z "${!required_var:-}" ]; then
+              echo "Error: '$required_var' is not set" >&2
+              exit 1
+            fi
+          done
+
+          cd dist
+          for FILE in *; do
+            S3_PATH="/librewolf-winupdater/${APP_VERSION}/${FILE}"
+            echo "-> Uploading ${FILE} to S3" >&2
+            if ! s3cmd put "${FILE}" "s3://${S3_BUCKET}${S3_PATH}" \
+              --access_key="$S3_KEY" \
+              --secret_key="$S3_SECRET" \
+              --host="$S3_ENDPOINT" \
+              --host-bucket="$S3_ENDPOINT" \
+              --guess-mime-type \
+              --no-mime-magic >&2; then
+              echo "Error: Failed to upload ${FILE} to S3" >&2
+              exit 1
+            fi
+            echo "${S3_PUBLIC_URL}${S3_PATH}"
+          done
