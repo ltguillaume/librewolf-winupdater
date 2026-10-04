@@ -1,6 +1,6 @@
 ; LibreWolf WinUpdater - https://librewolf.dev/librewolf/winupdater
-;@Ahk2Exe-SetFileVersion 1.19.3
-;@Ahk2Exe-SetProductVersion 1.19.3
+;@Ahk2Exe-SetFileVersion 1.20.0
+;@Ahk2Exe-SetProductVersion 1.20.0
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -37,7 +37,7 @@ Global Args       := ""
 , ChangesMade     := False
 , Done            := False
 , IniFile, Path, Folder, ProgramW6432, WorkDir, ExtractDir, Build, IgnoreCrlErrors, NoSigChecks, UpdateSelf, Task, CurrentDomain, CurrentUpdaterVersion
-, ReleaseInfo, CurrentVersion, NewVersion, SetupFile, GuiHwnd, LogField, ProgField, VerField, TaskSetField, UpdateButton, ShutdownBlocked, Died
+, ReleaseInfo, CurrentVersion, NewVersion, SetupFile, GuiHwnd, LogField, ProgField, VerField, TaskSetField, UpdateButton, Reinstalling, ShutdownBlocked, Died
 
 ; Strings
 Global _Updater       := Browser " WinUpdater"
@@ -89,7 +89,7 @@ Global _Updater       := Browser " WinUpdater"
 , _UpdateError        := "Error while updating{}."
 , _SilentUpdateError  := "Silent update did not complete.`nDo you want to run the interactive installer?"
 , _NewVersionFound    := "New version available.`nClose " Browser " to continue..."
-, _NoNewVersion       := "No new version found."
+, _NoNewVersion       := "No new version. <a>Reinstall</a> if issues occur."
 , _ExtractionError    := "Could not extract the {Task} archive.`nMake sure " Browser " is not running and restart the updater."
 , _MoveToTargetError  := "Could not move the following file into the target folder:`n{}"
 , _IsUpdating         := "Update in progress..."
@@ -155,7 +155,7 @@ Init() {
 	Gui, Add, Text, vVerField x86 y42 w222 BackgroundTrans
 	Gui, Font, w400
 	Gui, Add, Progress, vProgField w217 h20 c00ACFF, 10
-	Gui, Add, Text, vLogField w222
+	Gui, Add, Link, gReinstall vLogField w222
 	Gui, Margin,, 15
 	Gui, Show, Hide, %_Title%
 
@@ -448,6 +448,12 @@ GetNewVersion(Waited = False) {
 	Return NewVersion
 }
 
+Reinstall() {
+	Reinstalling := True
+	GuiControl,, ProgField, 30
+	GetUpdate()
+}
+
 GetUpdate() {
 	GuiControl,, VerField, %CurrentVersion% %_To% %NewVersion% (%Build%)
 	If (Portable Or !Scheduled)
@@ -458,7 +464,7 @@ GetUpdate() {
 	Verify(SetupFile)
 	Waited := BrowserWaitClose()
 
-	If (Waited) {
+	If (Waited And !Reinstalling) {
 		If (VerCompare(GetNewVersion(True), ">" NewVersion)) {	; Check for newer version since download
 			FileDelete, %SetupFile%
 			Goto, Download
@@ -880,7 +886,8 @@ GuiShow(Wait = False) {
 	Gui, Show, % "AutoSize " (Focus() ? "" : NoFocus)
 	If (!Focus())
 		Gui, Flash
-	ControlFocus, SysLink1
+	If (Died)
+		ControlFocus, SysLink2
 	If (Wait)
 		GuiWaitClose()
 }
