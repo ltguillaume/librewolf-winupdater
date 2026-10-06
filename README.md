@@ -57,7 +57,7 @@ You may encounter a `Security Alert: Revocation information for the Security cer
 IgnoreCrlErrors=1
 ```
 ### Asking for help
-If you experience another issue, you can search the problems (and solutions) reported in the [WinUpdater Issues](https://librewolf.dev/librewolf/winupdater/issues) and the [LibreWolf Issues](https://codeberg.org/librewolf/issues/issues), or create an issue yourself.
+If you experience another issue, you can search the problems (and solutions) reported in the [WinUpdater issues](https://librewolf.dev/librewolf/winupdater/issues) and the [LibreWolf issues](https://librewolf.dev/librewolf/issues/issues), or create an issue yourself.
 
 ## Credits
 * [LibreWolf](https://librewolf.net) by the [LibreWolf Community](https://librewolf.net/#core-contributors)

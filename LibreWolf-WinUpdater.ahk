@@ -469,7 +469,7 @@ GetUpdate() {
 			FileDelete, %SetupFile%
 			Goto, Download
 		} Else
-			Verify(SetupFile, False)	; Verify hash (only) to make sure the setup file hasn't been tampered with since download
+			Verify(SetupFile, False)	; Verify hash (no signature) to make sure the setup file hasn't been tampered with since download
 	}
 
 	RunUpdate()
