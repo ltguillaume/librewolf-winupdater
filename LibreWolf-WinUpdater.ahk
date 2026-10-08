@@ -1,6 +1,6 @@
 ; LibreWolf WinUpdater - https://librewolf.dev/librewolf/winupdater
-;@Ahk2Exe-SetFileVersion 1.20.0
-;@Ahk2Exe-SetProductVersion 1.20.0
+;@Ahk2Exe-SetFileVersion 1.21.0
+;@Ahk2Exe-SetProductVersion 1.21.0
 
 ;@Ahk2Exe-Base Unicode 32*
 ;@Ahk2Exe-SetCompanyName LibreWolf Community
@@ -391,9 +391,8 @@ SelfUpdate() {
 	SelfUpdateZip := DownloadInfo1
 	DownloadUrl := DownloadInfo2
 	Try UrlDownloadToFile, %DownloadUrl%, %SelfUpdateZip%
-	Catch e {
-		ErrorLevel := e.What " (" e.Line "): " e.Message (e.Extra ? " [" e.Extra "]" : "") "."
-	}
+	Catch e
+		ErrorLevel := e.What ": " e.Message (e.Extra ? " [" e.Extra "]" : "") "."
 	If (ErrorLevel Or !FileExist(SelfUpdateZip))
 		Return Log("SelfUpdate", _DownloadSelfError " " ErrorLevel, True)
 ;MsgBox, Extracting %SelfUpdateZip%
@@ -493,9 +492,12 @@ DownloadUpdate() {
 
 	; Download setup file
 	Progress(_Downloading)
-	Try UrlDownloadToFile, %DownloadUrl%, %SetupFile%
-	Catch e {
-		ErrorLevel := e.What " (" e.Line "): " e.Message (e.Extra ? " [" e.Extra "]" : "") "."
+	Try RunWait, curl.exe -A WinUpdater -o "%SetupFile%" "%DownloadUrl%",, Hide UseErrorLevel
+	If (ErrorLevel) {
+		CurlError := ErrorLevel
+		Try UrlDownloadToFile, %DownloadUrl%, %SetupFile%
+		Catch e
+			ErrorLevel := "cURL: " CurlError ", " e.What ": " e.Message (e.Extra ? " [" e.Extra "]" : "") "."
 	}
 	If (ErrorLevel Or !FileExist(SetupFile))
 		Die(_DownloadSetupError " " ErrorLevel)
