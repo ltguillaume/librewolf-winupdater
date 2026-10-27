@@ -95,7 +95,7 @@ Global _Updater       := Browser " WinUpdater"
 , _IsUpdating         := "Update in progress..."
 , _IsUpdated          := Browser " has been updated."
 , _To                 := "to"
-, _GoToWebsite        := "<a>Restart WinUpdater</a> or visit the <a>project website</a> for help."
+, _GoToWebsite        := "<a>Restart WinUpdater</a> or visit the <a>project page</a> for help."
 
 CheckSettings()
 Init()
@@ -163,7 +163,7 @@ Init() {
 		CheckSignature(A_ScriptFullPath)
 
 	If (SettingTask Or !A_Args.Length()) {	; No arguments: when not running as portable or as a scheduled task
-		If (!IsPortable And FileExist(A_ScriptDir "\" TaskCreateFile) And FileExist(A_ScriptDir "\" TaskRemoveFile)) {	; No scheduled tasks for portable version
+		If (SettingTask Or (!IsPortable And FileExist(A_ScriptDir "\" TaskCreateFile) And FileExist(A_ScriptDir "\" TaskRemoveFile))) {	; No scheduled tasks for portable version
 			Gui, Add, CheckBox, vTaskSetField gTaskSet x15 y+10 w290 cBCBCBC Center Check3 -Tabstop, % StrReplace(_SetTask, "{}", A_UserName)
 			TaskCheck()
 		}
@@ -492,7 +492,7 @@ DownloadUpdate() {
 
 	; Download setup file
 	Progress(_Downloading)
-	Try RunWait, curl.exe -A WinUpdater -o "%SetupFile%" "%DownloadUrl%",, Hide UseErrorLevel
+	RunWait, curl.exe -A WinUpdater -o "%SetupFile%" "%DownloadUrl%",, Hide UseErrorLevel
 	If (ErrorLevel) {
 		CurlError := ErrorLevel
 		Try UrlDownloadToFile, %DownloadUrl%, %SetupFile%
@@ -602,15 +602,15 @@ ExtractPortable() {
 	If (!Extract(WorkDir "\" SetupFile, ExtractDir))
 		Die(_ExtractionError)
 
+	SetupExtracted := ExtractDir
 	Loop, Files, %ExtractDir%\*, D
-	{
-		SetupExtracted := A_LoopFilePath	;	Get the first folder of the extracted archive
-		Break
-	}
+		If (FileExist(A_LoopFilePath "\" BrowserPortable)) {
+			SetupExtracted := A_LoopFilePath	;	Get the folder with LibreWolf
+			Break
+		}
 
-	SetWorkingDir, %SetupExtracted%
-	CheckSignature(A_WorkingDir "\" PortableExe)
-	CheckSignature(A_WorkingDir "\" BrowserPortable)
+	CheckSignature(SetupExtracted "\" PortableExe)
+	CheckSignature(SetupExtracted "\" BrowserPortable)
 
 	; Move files not present in the new version to a backup folder
 	SetWorkingDir, %A_ScriptDir%\%Browser%
@@ -640,6 +640,7 @@ ExtractPortable() {
 			ChangesMade := True
 		}
 	}
+
 	FileMove, %Browser%\%BrowserExe%, %Path%, 1
 	If (ErrorLevel)
 		Die(_MoveToTargetError, BrowserExe)
